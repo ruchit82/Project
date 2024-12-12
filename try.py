@@ -13,42 +13,61 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-# Streamlit app
-st.title("Excel Data Analysis App")
+# Title for the app
+st.title("Data Analysis Application")
 
-# File uploader
-uploaded_file = st.file_uploader("Upload an Excel file", type=["xlsx"])
+# File uploader for Excel, CSV, and XLS files
+uploaded_file = st.file_uploader("Upload your data file", type=["xlsx", "csv", "xls"])
 
-if uploaded_file is not None:
+if uploaded_file:
     try:
-        # Load data
-        data = pd.read_excel(uploaded_file)
+        # Load the data based on file type
+        if uploaded_file.name.endswith('.csv'):
+            data = pd.read_csv(uploaded_file)
+        else:
+            data = pd.read_excel(uploaded_file)
+
         st.subheader("Preview of the Data")
         st.write(data.head(10))
-
-        # Display unique categories before deletion
-        unique_categories_before = data['CATEGORY'].unique()
-        st.subheader("Unique Categories Before Deletion")
-        st.write(unique_categories_before)
-
-        # Filter data
-        excluded_categories = ['ST', 'LOOSE PCS', 'PARA BIDS', 'Langadi', 'PROCESS LOSS', 'SCRAP PCC', 'BALL CHAIN', 'SIGNING TAR', 'Fine']
-        df = data[~data['CATEGORY'].isin(excluded_categories)]
-
-        # Display unique categories after deletion
-        unique_categories_after = df['CATEGORY'].unique()
-        st.subheader("Unique Categories After Deletion")
-        st.write(unique_categories_after)
 
         # Check for required columns
         required_columns = ['DocDate', 'type', 'parName', 'CATEGORY', 'weight', 'noPcs']
         if not all(col in data.columns for col in required_columns):
             st.error(f"The dataset must contain these columns: {required_columns}")
         else:
-            # Party weight summary
+            # Display unique categories before filtering
+            st.subheader("Unique Categories Before Filtering")
+            st.write(data['CATEGORY'].unique())
+
+            # Remove unwanted categories
+            excluded_categories = ['ST', 'LOOSE PCS', 'PARA BIDS', 'Langadi', 'PROCESS LOSS',
+                                   'SCRAP PCC', 'BALL CHAIN', 'SIGNING TAR', 'Fine']
+            df = data[~data['CATEGORY'].isin(excluded_categories)]
+
+            # Display unique categories after filtering
+            st.subheader("Unique Categories After Filtering")
+            st.write(df['CATEGORY'].unique())
+
+            # Party-wise weight summary
             party_weight_summary = df.groupby('parName')['weight'].sum().reset_index()
-            top_10_parties = party_weight_summary.sort_values(by='weight', ascending=False).head(10)
-            bottom_5_parties = party_weight_summary.sort_values(by='weight', ascending=True).head(5)
+            party_weight_summary['Rank'] = party_weight_summary['weight'].rank(ascending=False, method='dense')
+            party_weight_summary = party_weight_summary.sort_values(by='weight', ascending=False)
+
+            # Check Party Rank
+            st.write("### Check Party Rank")
+            party_name = st.text_input("Enter the party name:")
+            if party_name:
+                if party_name in party_weight_summary['parName'].values:
+                    party_details = party_weight_summary[party_weight_summary['parName'] == party_name]
+                    st.write(f"**Rank:** {int(party_details['Rank'].values[0])}")
+                    st.write(f"**Party Name:** {party_name}")
+                    st.write(f"**Total Weight:** {party_details['weight'].values[0]:.2f}")
+                else:
+                    st.error("Party name not found in the dataset.")
+
+            # Top 10 and Bottom 5 Parties by Weight
+            top_10_parties = party_weight_summary.head(10)
+            bottom_5_parties = party_weight_summary.tail(5)
 
             st.subheader("Top 10 Parties by Weight")
             st.write(top_10_parties)
@@ -57,13 +76,11 @@ if uploaded_file is not None:
             st.write(bottom_5_parties)
 
             # Category-wise summary
-            category_summary = df.groupby('CATEGORY').agg({
-                'weight': 'sum',
-                'noPcs': 'sum'
-            }).reset_index()
+            category_summary = df.groupby('CATEGORY').agg({'weight': 'sum', 'noPcs': 'sum'}).reset_index()
+            category_summary_sorted = category_summary.sort_values(by='weight', ascending=False)
 
-            top_10_categories = category_summary.sort_values(by='weight', ascending=False).head(10)
-            bottom_5_categories = category_summary.sort_values(by='weight', ascending=True).head(5)
+            top_10_categories = category_summary_sorted.head(10)
+            bottom_5_categories = category_summary_sorted.tail(5)
 
             st.subheader("Top 10 Categories by Weight")
             st.write(top_10_categories)
@@ -101,7 +118,7 @@ if uploaded_file is not None:
 
             # Pie Chart: Category-wise Weight Distribution (Top 15)
             st.subheader("Pie Chart: Category-wise Weight Distribution (Top 15)")
-            top_15_categories = category_summary.sort_values(by='weight', ascending=False).head(15)
+            top_15_categories = category_summary_sorted.head(15)
             fig, ax = plt.subplots(figsize=(8, 8))
             ax.pie(top_15_categories['weight'], labels=top_15_categories['CATEGORY'], autopct='%1.1f%%', startangle=140, colors=sns.color_palette('pastel'))
             ax.set_title('Category-wise Weight Distribution (Top 15)')
@@ -117,7 +134,12 @@ if uploaded_file is not None:
             st.pyplot(fig)
 
     except Exception as e:
-        st.error(f"An error occurred: {e}")
+        st.error(f"Error processing the file: {e}")
+else:
+    st.info("Awaiting file upload...")
+
+
+    
 
 
 
