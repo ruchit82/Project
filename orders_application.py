@@ -16,22 +16,16 @@ from io import BytesIO
 
 # Function for user authentication
 def login(users):
-    if "logged_in" not in st.session_state:
-        st.session_state.logged_in = False
-        st.session_state.username = None
-
-    if not st.session_state.logged_in:
-        st.title("Login")
-        username = st.text_input("Username")
-        password = st.text_input("Password", type="password")
-        if st.button("Login"):
-            if username in users and users[username] == password:
-                st.session_state.logged_in = True
-                st.session_state.username = username
-                st.success(f"Welcome, {username}!")
-            else:
-                st.error("Invalid credentials. Please try again.")
-    return st.session_state.logged_in, st.session_state.username
+    st.title("Login")
+    username = st.text_input("Username")
+    password = st.text_input("Password", type="password")
+    if st.button("Login"):
+        if username in users and users[username] == password:
+            st.success(f"Welcome, {username}!")
+            return username
+        else:
+            st.error("Invalid credentials. Please try again.")
+    return None
 
 # Function to resize image
 def resize_image(image, max_width=300):
@@ -81,9 +75,9 @@ def generate_summary_report(excel_file_path):
 
 # Streamlit app
 users = {"user1": "password1", "user2": "password2"}
-logged_in, username = login(users)
+username = login(users)
 
-if logged_in:
+if username:
     st.sidebar.title("Menu")
     menu = st.sidebar.radio("Select an option", ["Add New Order", "View Summary Report", "Search Order", "Download Data"])
 
@@ -129,6 +123,21 @@ if logged_in:
 
                 st.image(combined_image, caption="Combined Image")
                 st.success(f"Order saved successfully! Combined image saved as {output_image_path}")
+
+                # Provide a download button for the combined image
+                img_buffer = BytesIO()
+                combined_image.save(img_buffer, format="PNG")
+                img_buffer.seek(0)
+                st.download_button(
+                    label="Download Combined Image",
+                    data=img_buffer,
+                    file_name=output_image_path,
+                    mime="image/png"
+                )
+
+                # Print option (only works if browser/OS supports it)
+                if st.button("Print Combined Image"):
+                    st.write("To print, please download the image and use your system's print option.")
             else:
                 st.error("Please fill all the fields and upload an image.")
 
@@ -166,5 +175,4 @@ if logged_in:
                 )
         else:
             st.info("No data file exists yet.")
-
 
