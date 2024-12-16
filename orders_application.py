@@ -16,16 +16,22 @@ from io import BytesIO
 
 # Function for user authentication
 def login(users):
-    st.title("Login")
-    username = st.text_input("Username")
-    password = st.text_input("Password", type="password")
-    if st.button("Login"):
-        if username in users and users[username] == password:
-            st.success(f"Welcome, {username}!")
-            return username
-        else:
-            st.error("Invalid credentials. Please try again.")
-    return None
+    if "logged_in" not in st.session_state:
+        st.session_state.logged_in = False
+        st.session_state.username = None
+
+    if not st.session_state.logged_in:
+        st.title("Login")
+        username = st.text_input("Username")
+        password = st.text_input("Password", type="password")
+        if st.button("Login"):
+            if username in users and users[username] == password:
+                st.session_state.logged_in = True
+                st.session_state.username = username
+                st.success(f"Welcome, {username}!")
+            else:
+                st.error("Invalid credentials. Please try again.")
+    return st.session_state.logged_in, st.session_state.username
 
 # Function to resize image
 def resize_image(image, max_width=300):
@@ -75,9 +81,9 @@ def generate_summary_report(excel_file_path):
 
 # Streamlit app
 users = {"user1": "password1", "user2": "password2"}
-username = login(users)
+logged_in, username = login(users)
 
-if username:
+if logged_in:
     st.sidebar.title("Menu")
     menu = st.sidebar.radio("Select an option", ["Add New Order", "View Summary Report", "Search Order", "Download Data"])
 
@@ -160,4 +166,5 @@ if username:
                 )
         else:
             st.info("No data file exists yet.")
+
 
