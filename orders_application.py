@@ -96,14 +96,15 @@ if username:
 
         image_file = st.file_uploader("Upload Order Image", type=["jpg", "png"])
 
-        order_no = st.text_input("Order No")
-        party_name = st.text_input("Party Name")
+        date = st.date_input("Date", value=datetime.today().date())
         party_code = st.text_input("Party Code")
+        party_name = st.text_input("Party Name")
+        order_no = st.text_input("Order No") 
         weight = st.text_input("Weight")
         size = st.text_input("Size")
         rhodium = st.text_input("Rhodium (Yes/No)")
         remark = st.text_area("Remark")
-        date = st.date_input("Date", value=datetime.today().date())  # Add Date field with today's date as default
+          # Add Date field with today's date as default
 
         if st.button("Submit"):
             image = None
