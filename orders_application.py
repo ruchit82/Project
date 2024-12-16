@@ -102,7 +102,7 @@ if username:
         order_no = st.text_input("Order No") 
         weight = st.text_input("Weight")
         size = st.text_input("Size")
-         PCS = st.text_input("PCS")
+        PCS = st.text_input("PCS")
         rhodium = st.text_input("Rhodium (Yes/No)")
         remark = st.text_area("Remark")
           # Add Date field with today's date as default
