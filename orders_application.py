@@ -102,6 +102,7 @@ if username:
         order_no = st.text_input("Order No") 
         weight = st.text_input("Weight")
         size = st.text_input("Size")
+        PCS = st.text_input("PCS")
         rhodium = st.text_input("Rhodium (Yes/No)")
         remark = st.text_area("Remark")
           # Add Date field with today's date as default
@@ -113,6 +114,7 @@ if username:
                 image = resize_image(image)
 
             details = {
+                 "Date": date
                 "Order No": order_no if order_no else "N/A",  # If not filled, show 'N/A'
                 "Party Name": party_name if party_name else "N/A",
                 "Party Code": party_code if party_code else "N/A",
@@ -120,7 +122,7 @@ if username:
                 "Size": size if size else "N/A",
                 "Rhodium": rhodium if rhodium else "N/A",
                 "Remark": remark if remark else "N/A",
-                "Date": date
+               
             }
 
             # Combine image and text if image is provided
