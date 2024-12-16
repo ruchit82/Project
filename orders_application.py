@@ -14,6 +14,15 @@ from datetime import datetime
 import os
 from io import BytesIO
 
+# Function to initialize session state
+def init_session_state():
+    if "logged_in" not in st.session_state:
+        st.session_state.logged_in = False
+        st.session_state.username = None
+
+# Initialize session state
+init_session_state()
+
 # Function for user authentication
 def login(users):
     st.title("Login")
@@ -21,11 +30,11 @@ def login(users):
     password = st.text_input("Password", type="password")
     if st.button("Login"):
         if username in users and users[username] == password:
+            st.session_state.logged_in = True
+            st.session_state.username = username
             st.success(f"Welcome, {username}!")
-            return username
         else:
             st.error("Invalid credentials. Please try again.")
-    return None
 
 # Function to resize image
 def resize_image(image, max_width=300):
@@ -73,15 +82,17 @@ def generate_summary_report(excel_file_path):
     else:
         return pd.DataFrame()
 
-# Streamlit app
+# User dictionary for authentication
 users = {"user1": "password1", "user2": "password2"}
-username = login(users)
 
-if username:
+# Login workflow
+if not st.session_state.logged_in:
+    login(users)
+else:
     st.sidebar.title("Menu")
     menu = st.sidebar.radio("Select an option", ["Add New Order", "View Summary Report", "Search Order", "Download Data"])
 
-    excel_file_path = f"{username}_order_details.xlsx"
+    excel_file_path = f"{st.session_state.username}_order_details.xlsx"
 
     if menu == "Add New Order":
         st.title("Add New Order")
