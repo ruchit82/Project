@@ -103,22 +103,27 @@ if username:
         size = st.text_input("Size")
         rhodium = st.text_input("Rhodium (Yes/No)")
         remark = st.text_area("Remark")
+        date = st.date_input("Date", value=datetime.today().date())  # Add Date field with today's date as default
 
         if st.button("Submit"):
-            if image_file and order_no and party_name and party_code and weight and size and rhodium:
+            image = None
+            if image_file:
                 image = Image.open(image_file)
                 image = resize_image(image)
 
-                details = {
-                    "Order No": order_no,
-                    "Party Name": party_name,
-                    "Party Code": party_code,
-                    "Weight": weight,
-                    "Size": size,
-                    "Rhodium": rhodium,
-                    "Remark": remark
-                }
+            details = {
+                "Order No": order_no if order_no else "N/A",  # If not filled, show 'N/A'
+                "Party Name": party_name if party_name else "N/A",
+                "Party Code": party_code if party_code else "N/A",
+                "Weight": weight if weight else "N/A",
+                "Size": size if size else "N/A",
+                "Rhodium": rhodium if rhodium else "N/A",
+                "Remark": remark if remark else "N/A",
+                "Date": date
+            }
 
+            # Combine image and text if image is provided
+            if image:
                 combined_image = combine_image_with_text(image, details)
 
                 # Save combined image
@@ -145,7 +150,7 @@ if username:
 
                 st.markdown("**To print, download the image and print it using your system.**")
             else:
-                st.error("Please fill all the fields and upload an image.")
+                st.warning("Image not uploaded, but order details have been saved.")
 
     elif menu == "View Summary Report":
         st.title("Summary Report")
@@ -181,5 +186,3 @@ if username:
                 )
         else:
             st.info("No data file exists yet.")
-
-
