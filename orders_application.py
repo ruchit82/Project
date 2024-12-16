@@ -14,27 +14,25 @@ from datetime import datetime
 import os
 from io import BytesIO
 
-# Function to initialize session state
-def init_session_state():
-    if "logged_in" not in st.session_state:
-        st.session_state.logged_in = False
-        st.session_state.username = None
-
-# Initialize session state
-init_session_state()
-
 # Function for user authentication
 def login(users):
+    if "authenticated_user" not in st.session_state:
+        st.session_state.authenticated_user = None
+
+    if st.session_state.authenticated_user:
+        return st.session_state.authenticated_user
+
     st.title("Login")
     username = st.text_input("Username")
     password = st.text_input("Password", type="password")
     if st.button("Login"):
         if username in users and users[username] == password:
-            st.session_state.logged_in = True
-            st.session_state.username = username
             st.success(f"Welcome, {username}!")
+            st.session_state.authenticated_user = username
+            return username
         else:
             st.error("Invalid credentials. Please try again.")
+    return None
 
 # Function to resize image
 def resize_image(image, max_width=300):
@@ -45,7 +43,8 @@ def resize_image(image, max_width=300):
 
 # Function to combine image and text
 def combine_image_with_text(image, details):
-    font = ImageFont.load_default()
+    font_path = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"  # Path to system font
+    font = ImageFont.truetype(font_path, size=20)  # Set font size to 20, bold
     text_width = 400
     canvas_width = image.width + text_width
     canvas_height = max(image.height, 200)
@@ -57,7 +56,7 @@ def combine_image_with_text(image, details):
     y_position = 10
     for key, value in details.items():
         draw.text((10, y_position), f"{key}: {value}", fill="black", font=font)
-        y_position += 20
+        y_position += 30  # Increased line spacing for larger font
 
     # Paste the image on the right side
     combined_image.paste(image, (text_width, 0))
@@ -82,17 +81,15 @@ def generate_summary_report(excel_file_path):
     else:
         return pd.DataFrame()
 
-# User dictionary for authentication
+# Streamlit app
 users = {"user1": "password1", "user2": "password2"}
+username = login(users)
 
-# Login workflow
-if not st.session_state.logged_in:
-    login(users)
-else:
+if username:
     st.sidebar.title("Menu")
     menu = st.sidebar.radio("Select an option", ["Add New Order", "View Summary Report", "Search Order", "Download Data"])
 
-    excel_file_path = f"{st.session_state.username}_order_details.xlsx"
+    excel_file_path = f"{username}_order_details.xlsx"
 
     if menu == "Add New Order":
         st.title("Add New Order")
@@ -146,9 +143,7 @@ else:
                     mime="image/png"
                 )
 
-                # Print option (only works if browser/OS supports it)
-                if st.button("Print Combined Image"):
-                    st.write("To print, please download the image and use your system's print option.")
+                st.markdown("**To print, download the image and print it using your system.**")
             else:
                 st.error("Please fill all the fields and upload an image.")
 
@@ -186,4 +181,5 @@ else:
                 )
         else:
             st.info("No data file exists yet.")
+
 
