@@ -81,13 +81,27 @@ def generate_summary_report(excel_file_path):
     else:
         return pd.DataFrame()
 
+# Function to delete orders based on date or all data
+def delete_orders(excel_file_path, date_to_delete=None):
+    if os.path.exists(excel_file_path):
+        df = pd.read_excel(excel_file_path)
+        if date_to_delete:
+            df = df[df["Date"] != str(date_to_delete)]  # Keep rows not matching the date
+            st.success(f"Orders for {date_to_delete} have been deleted.")
+        else:
+            df = pd.DataFrame()  # Clear all data
+            st.success("All orders have been deleted.")
+        df.to_excel(excel_file_path, index=False)
+    else:
+        st.info("No data exists yet.")
+
 # Streamlit app
 users = {"user1": "password1", "user2": "password2"}
 username = login(users)
 
 if username:
     st.sidebar.title("Menu")
-    menu = st.sidebar.radio("Select an option", ["Add New Order", "View Summary Report", "Search Order", "Download Data"])
+    menu = st.sidebar.radio("Select an option", ["Add New Order", "View Summary Report", "Search Order", "Delete Orders", "Download Data"])
 
     excel_file_path = f"{username}_order_details.xlsx"
 
@@ -96,17 +110,17 @@ if username:
 
         image_file = st.file_uploader("Upload Order Image", type=["jpg", "png"])
 
-
+        # Input fields for order details
         Date = st.date_input("Date", value=datetime.today().date())
         Party_code = st.text_input("Party Code")
         Party_name = st.text_input("Party Name")
-        Order_no = st.text_input("Order No") 
+        Order_no = st.text_input("Order No")
         Weight = st.text_input("Weight")
         Size = st.text_input("Size")
         PCS = st.text_input("PCS")
         Rhodium = st.text_input("Rhodium (Yes/No)")
         Remark = st.text_area("Remark")
-         
+
         if st.button("Submit"):
             image = None
             if image_file:
@@ -114,34 +128,29 @@ if username:
                 image = resize_image(image)
 
             details = {
-                
-                "Order No": order_no if order_no else "N/A",  # If not filled, show 'N/A',
-                "Date": date,
-                "Party Name": party_name if party_name else "N/A",
-                "Party Code": party_code if party_code else "N/A",
-                "Weight": weight if weight else "N/A",
-                "Size": size if size else "N/A",
-                "Rhodium": rhodium if rhodium else "N/A",
-                "Remark": remark if remark else "N/A",
-               
+                "Order No": Order_no if Order_no else "N/A",
+                "Date": str(Date),
+                "Party Name": Party_name if Party_name else "N/A",
+                "Party Code": Party_code if Party_code else "N/A",
+                "Weight": Weight if Weight else "N/A",
+                "Size": Size if Size else "N/A",
+                "PCS": PCS if PCS else "N/A",
+                "Rhodium": Rhodium if Rhodium else "N/A",
+                "Remark": Remark if Remark else "N/A",
             }
 
             # Combine image and text if image is provided
             if image:
                 combined_image = combine_image_with_text(image, details)
-
-                # Save combined image
                 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-                output_image_path = f"combined_order_image_{order_no}_{timestamp}.png"
+                output_image_path = f"combined_order_image_{Order_no}_{timestamp}.png"
                 combined_image.save(output_image_path)
 
-                # Save details to Excel
                 save_to_excel(details, excel_file_path)
 
                 st.image(combined_image, caption="Combined Image")
                 st.success(f"Order saved successfully! Combined image saved as {output_image_path}")
 
-                # Provide a download button for the combined image
                 img_buffer = BytesIO()
                 combined_image.save(img_buffer, format="PNG")
                 img_buffer.seek(0)
@@ -151,10 +160,9 @@ if username:
                     file_name=output_image_path,
                     mime="image/png"
                 )
-
-                st.markdown("**To print, download the image and print it using your system.**")
             else:
-                st.warning("Image not uploaded, but order details have been saved.")
+                save_to_excel(details, excel_file_path)
+                st.success("Order details have been saved without an image.")
 
     elif menu == "View Summary Report":
         st.title("Summary Report")
@@ -166,17 +174,32 @@ if username:
 
     elif menu == "Search Order":
         st.title("Search Order")
-        order_no = st.text_input("Enter Order No")
+        search_by = st.radio("Search By", ["Order No", "Party Name"])
+        search_input = st.text_input(f"Enter {search_by}")
         if st.button("Search"):
             df = generate_summary_report(excel_file_path)
             if not df.empty:
-                result = df[df["Order No"] == order_no]
+                if search_by == "Order No":
+                    result = df[df["Order No"] == search_input]
+                else:
+                    result = df[df["Party Name"].str.contains(search_input, case=False, na=False)]
                 if not result.empty:
                     st.write(result)
                 else:
                     st.error("Order not found.")
             else:
                 st.info("No orders have been entered yet.")
+
+    elif menu == "Delete Orders":
+        st.title("Delete Orders")
+        delete_option = st.radio("Delete Option", ["Delete All Orders", "Delete by Date"])
+        if delete_option == "Delete All Orders":
+            if st.button("Delete All"):
+                delete_orders(excel_file_path)
+        elif delete_option == "Delete by Date":
+            date_to_delete = st.date_input("Select Date to Delete")
+            if st.button("Delete by Date"):
+                delete_orders(excel_file_path, date_to_delete)
 
     elif menu == "Download Data":
         st.title("Download Data")
