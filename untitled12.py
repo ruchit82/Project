@@ -8,97 +8,130 @@ Original file is located at
 """
 
 # -*- coding: utf-8 -*-
-import streamlit as st
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
+import streamlit as st
 
-# Title of the application
-st.title("Monthly Sales Data Analysis Application")
+# Streamlit configurations
+st.set_page_config(page_title="Export Sales Analysis", layout="wide")
+sns.set(style="whitegrid")
+st.title("📊 Export Sales Analysis Dashboard")
 
-# File uploader for data
-uploaded_file = st.file_uploader("Upload your data file (Excel/CSV)", type=["xlsx", "csv", "xls"])
+# Upload Excel file
+uploaded_file = st.file_uploader("Upload the Export Sales Excel File", type=['xlsx', 'xls'])
 
 if uploaded_file:
-    try:
-        # Read uploaded file
-        if uploaded_file.name.endswith('.csv'):
-            data = pd.read_csv(uploaded_file)
-        else:
-            data = pd.read_excel(uploaded_file)
+    # Load data
+    data = pd.read_excel(uploaded_file)
+    st.write("### Preview of Uploaded Data")
+    st.dataframe(data.head(10))
 
-        st.write("### Preview of Uploaded Dataset:")
-        st.dataframe(data.head(10))
+    # Data Info
+    st.write("### Data Information")
+    buffer = data.info(buf=None)
+    st.text(buffer)
 
-        # Check for required columns
-        required_columns = ['DocDate', 'type', 'parName', 'CATEGORY', 'weight', 'noPcs']
-        if not all(col in data.columns for col in required_columns):
-            st.error(f"Dataset must contain these columns: {required_columns}")
-        else:
-            # Handle missing values
-            if data.isnull().sum().any():
-                st.warning("Dataset contains missing values. These will be dropped.")
-                data = data.dropna()
+    # Summary statistics
+    st.write("### Data Summary")
+    st.write(data.describe())
 
-            # Convert DocDate to datetime
-            data['DocDate'] = pd.to_datetime(data['DocDate'], errors='coerce')
-            data = data.dropna(subset=['DocDate'])  # Drop invalid dates
-            
-            # Filter excluded categories
-            excluded_categories = ['ST', 'LOOSE PCS', 'PARA BIDS', 'Langadi', 'PROCESS LOSS',
-                                   'SCRAP PCC', 'BALL CHAIN', 'SIGNING TAR', 'Fine']
-            df = data[~data['CATEGORY'].isin(excluded_categories)]
+    # Weight and Quantity Summary
+    st.write("### Weight and Quantity Summary")
+    col1, col2 = st.columns(2)
+    with col1:
+        st.write("#### Statistics for WEIGHT")
+        st.write(data['WEIGHT'].describe())
+    with col2:
+        st.write("#### Statistics for QTY")
+        st.write(data['QTY'].describe())
 
-            # Date range filter
-            st.write("### Filter by Date Range")
-            min_date, max_date = df['DocDate'].min(), df['DocDate'].max()
-            date_range = st.date_input("Select Date Range", [min_date, max_date], min_value=min_date, max_value=max_date)
-            filtered_df = df[(df['DocDate'] >= pd.to_datetime(date_range[0])) & 
-                             (df['DocDate'] <= pd.to_datetime(date_range[1]))]
+    # Unique counts for categorical columns
+    st.write("### Unique Values in Categorical Columns")
+    st.write(f"Unique Parties: {data['PARTY'].nunique()}")
+    st.write(f"Unique Types: {data['TYPE'].nunique()}")
+    st.write(f"Unique Sizes: {data['SIZE'].nunique()}")
 
-            # Aggregated Summary
-            st.write("### Overall Sales Summary")
-            total_weight = filtered_df['weight'].sum()
-            total_pieces = filtered_df['noPcs'].sum()
-            st.write(f"**Total Weight:** {total_weight:.2f}")
-            st.write(f"**Total Pieces:** {int(total_pieces)}")
+    # Time-based Analysis
+    st.write("### Weight and Quantity Over Time")
+    data['DATE'] = pd.to_datetime(data['DATE'])
+    time_summary = data.groupby('DATE').agg({'WEIGHT': 'sum', 'QTY': 'sum'}).reset_index()
+    fig1, ax1 = plt.subplots(figsize=(10, 6))
+    sns.lineplot(x='DATE', y='WEIGHT', data=time_summary, marker='o', label='Weight')
+    sns.lineplot(x='DATE', y='QTY', data=time_summary, marker='o', label='Quantity')
+    ax1.set_title("Weight and Quantity Over Time")
+    plt.xlabel("Date")
+    plt.ylabel("Total")
+    plt.legend()
+    st.pyplot(fig1)
 
-            # Party-wise Analysis
-            st.write("### Party-wise Weight Analysis")
-            party_weight_summary = filtered_df.groupby('parName')['weight'].sum().reset_index()
-            top_10_parties = party_weight_summary.sort_values(by='weight', ascending=False).head(10)
-            st.bar_chart(top_10_parties.set_index('parName')['weight'])
+    # Party-based Analysis
+    st.write("### Top and Bottom Parties by Weight")
+    party_summary = data.groupby('PARTY')['WEIGHT'].sum().reset_index()
+    top_10_parties = party_summary.sort_values(by='WEIGHT', ascending=False).head(10)
+    bottom_5_parties = party_summary.sort_values(by='WEIGHT').head(5)
 
-            # Rank of Selected Party
-            st.write("### Check Rank of a Party")
-            party_name = st.selectbox("Select a Party:", options=party_weight_summary['parName'].unique())
-            if party_name:
-                party_rank = party_weight_summary.sort_values(by='weight', ascending=False)
-                party_rank['Rank'] = party_rank['weight'].rank(ascending=False, method='dense')
-                selected_party = party_rank[party_rank['parName'] == party_name]
-                st.write(f"**Party Name:** {party_name}")
-                st.write(f"**Rank:** {int(selected_party['Rank'].values[0])}")
-                st.write(f"**Total Weight:** {selected_party['weight'].values[0]:.2f}")
+    col1, col2 = st.columns(2)
+    with col1:
+        st.write("#### Top 10 Parties")
+        fig2, ax2 = plt.subplots(figsize=(8, 6))
+        sns.barplot(x='WEIGHT', y='PARTY', data=top_10_parties, palette='Blues_r')
+        ax2.set_title("Top 10 Parties by Weight")
+        st.pyplot(fig2)
+    with col2:
+        st.write("#### Bottom 5 Parties")
+        fig3, ax3 = plt.subplots(figsize=(8, 6))
+        sns.barplot(x='WEIGHT', y='PARTY', data=bottom_5_parties, palette='Reds_r')
+        ax3.set_title("Bottom 5 Parties by Weight")
+        st.pyplot(fig3)
 
-            # Category-wise Analysis
-            st.write("### Top Categories by Weight")
-            category_summary = filtered_df.groupby('CATEGORY')['weight'].sum().reset_index()
-            category_summary_sorted = category_summary.sort_values(by='weight', ascending=False).head(10)
-            st.bar_chart(category_summary_sorted.set_index('CATEGORY')['weight'])
+    # Type-Based Analysis
+    st.write("### Type-Based Analysis")
+    type_summary = data.groupby('TYPE').agg({'WEIGHT': 'sum', 'QTY': 'sum'}).reset_index()
+    fig4, ax4 = plt.subplots(figsize=(10, 6))
+    sns.barplot(x='WEIGHT', y='TYPE', data=type_summary, palette='viridis')
+    ax4.set_title("Weight by Type")
+    st.pyplot(fig4)
 
-            # Weight Over Time
-            st.write("### Total Weight Over Time")
-            weight_over_time = filtered_df.groupby('DocDate')['weight'].sum().reset_index()
-            st.line_chart(weight_over_time.set_index('DocDate')['weight'])
+    # Size Analysis
+    st.write("### Size-Based Analysis")
+    size_summary = data.groupby('SIZE').agg({'WEIGHT': 'sum'}).reset_index()
+    fig5, ax5 = plt.subplots(figsize=(10, 6))
+    sns.barplot(x='SIZE', y='WEIGHT', data=size_summary, palette='coolwarm')
+    ax5.set_title("Weight by Size")
+    st.pyplot(fig5)
 
-            # Download Filtered Data
-            st.write("### Download Filtered Dataset")
-            csv = filtered_df.to_csv(index=False)
-            st.download_button("Download CSV", csv, "filtered_data.csv", "text/csv")
+    # Design-Based Analysis
+    st.write("### Top 5 Designs by Weight")
+    design_summary = data.groupby('DESIGN NO')['WEIGHT'].sum().reset_index()
+    top_5_designs = design_summary.sort_values(by='WEIGHT', ascending=False).head(5)
+    fig6, ax6 = plt.subplots(figsize=(8, 6))
+    sns.barplot(x='WEIGHT', y='DESIGN NO', data=top_5_designs, palette='Greens_r')
+    ax6.set_title("Top 5 Designs by Weight")
+    st.pyplot(fig6)
 
-    except Exception as e:
-        st.error(f"Error processing file: {e}")
+    # Correlation Analysis
+    st.write("### Correlation Analysis")
+    fig7, ax7 = plt.subplots(figsize=(8, 6))
+    sns.heatmap(data[['WEIGHT', 'QTY']].corr(), annot=True, cmap='coolwarm')
+    ax7.set_title("Correlation Matrix")
+    st.pyplot(fig7)
+
+    # Scatter Plot
+    st.write("### Weight vs Quantity Scatter Plot")
+    fig8, ax8 = plt.subplots(figsize=(8, 6))
+    sns.scatterplot(x='WEIGHT', y='QTY', data=data, hue='TYPE', palette='tab10')
+    ax8.set_title("Weight vs Quantity")
+    st.pyplot(fig8)
+
+    # Violin Plot
+    st.write("### Weight Distribution by Party")
+    fig9, ax9 = plt.subplots(figsize=(10, 6))
+    sns.violinplot(x='PARTY', y='WEIGHT', data=data, scale='width')
+    plt.xticks(rotation=45)
+    ax9.set_title("Weight Distribution by Party")
+    st.pyplot(fig9)
+
 else:
-    st.info("Please upload a valid Excel/CSV file.")
-
+    st.info("Please upload an Excel file to start the analysis.")
