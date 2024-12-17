@@ -7,145 +7,98 @@ Original file is located at
     https://colab.research.google.com/drive/1MdY6gYPnVec23hU9TjQlKZd3ixAExiEy
 """
 
+# -*- coding: utf-8 -*-
 import streamlit as st
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
-import warnings
-warnings.filterwarnings('ignore')
 
-# Streamlit App Title
-st.title("Data Analysis Application for Monthly Sales and Export Data")
+# Title of the application
+st.title("Monthly Sales Data Analysis Application")
 
-# File type selection
-file_type = st.radio("Choose the file type to analyze:", ("Monthly Sales", "Export"))
-
-# File uploader
-uploaded_file = st.file_uploader("Upload your data file", type=["xlsx", "csv", "xls"])
+# File uploader for data
+uploaded_file = st.file_uploader("Upload your data file (Excel/CSV)", type=["xlsx", "csv", "xls"])
 
 if uploaded_file:
     try:
-        # Load the uploaded file
+        # Read uploaded file
         if uploaded_file.name.endswith('.csv'):
             data = pd.read_csv(uploaded_file)
         else:
             data = pd.read_excel(uploaded_file)
 
-        st.write("### First 10 Rows of the Dataset:")
+        st.write("### Preview of Uploaded Dataset:")
         st.dataframe(data.head(10))
 
-        # Analysis for Monthly Sales
-        if file_type == "Monthly Sales":
-            # Required Columns Check
-            required_columns = ['DocDate', 'type', 'parName', 'CATEGORY', 'weight', 'noPcs']
-            if not all(col in data.columns for col in required_columns):
-                st.error(f"The Monthly Sales dataset must contain these columns: {required_columns}")
-            else:
-                # Remove unwanted categories
-                excluded_categories = ['ST', 'LOOSE PCS', 'PARA BIDS', 'Langadi', 'PROCESS LOSS',
-                                       'SCRAP PCC', 'BALL CHAIN', 'SIGNING TAR', 'Fine']
-                df = data[~data['CATEGORY'].isin(excluded_categories)]
+        # Check for required columns
+        required_columns = ['DocDate', 'type', 'parName', 'CATEGORY', 'weight', 'noPcs']
+        if not all(col in data.columns for col in required_columns):
+            st.error(f"Dataset must contain these columns: {required_columns}")
+        else:
+            # Handle missing values
+            if data.isnull().sum().any():
+                st.warning("Dataset contains missing values. These will be dropped.")
+                data = data.dropna()
 
-                # Party-wise weight summary
-                party_weight_summary = df.groupby('parName')['weight'].sum().reset_index()
-                party_weight_summary['Rank'] = party_weight_summary['weight'].rank(ascending=False, method='dense')
-                party_weight_summary = party_weight_summary.sort_values(by='weight', ascending=False)
+            # Convert DocDate to datetime
+            data['DocDate'] = pd.to_datetime(data['DocDate'], errors='coerce')
+            data = data.dropna(subset=['DocDate'])  # Drop invalid dates
+            
+            # Filter excluded categories
+            excluded_categories = ['ST', 'LOOSE PCS', 'PARA BIDS', 'Langadi', 'PROCESS LOSS',
+                                   'SCRAP PCC', 'BALL CHAIN', 'SIGNING TAR', 'Fine']
+            df = data[~data['CATEGORY'].isin(excluded_categories)]
 
-                # Party rank based on user input
-                st.write("### Check Party Rank")
-                party_name = st.text_input("Enter the party name:")
-                if party_name:
-                    if party_name in party_weight_summary['parName'].values:
-                        party_details = party_weight_summary[party_weight_summary['parName'] == party_name]
-                        st.write(f"**Rank:** {int(party_details['Rank'].values[0])}")
-                        st.write(f"**Party Name:** {party_name}")
-                        st.write(f"**Total Weight:** {party_details['weight'].values[0]:.2f}")
-                    else:
-                        st.error("Party name not found in the dataset.")
+            # Date range filter
+            st.write("### Filter by Date Range")
+            min_date, max_date = df['DocDate'].min(), df['DocDate'].max()
+            date_range = st.date_input("Select Date Range", [min_date, max_date], min_value=min_date, max_value=max_date)
+            filtered_df = df[(df['DocDate'] >= pd.to_datetime(date_range[0])) & 
+                             (df['DocDate'] <= pd.to_datetime(date_range[1]))]
 
-                # Top 10 and bottom 5 parties
-                top_10_parties = party_weight_summary.head(10)
-                bottom_5_parties = party_weight_summary.tail(5)
+            # Aggregated Summary
+            st.write("### Overall Sales Summary")
+            total_weight = filtered_df['weight'].sum()
+            total_pieces = filtered_df['noPcs'].sum()
+            st.write(f"**Total Weight:** {total_weight:.2f}")
+            st.write(f"**Total Pieces:** {int(total_pieces)}")
 
-                # Visualizations
-                st.write("### Top 10 Parties by Weight")
-                st.bar_chart(top_10_parties.set_index('parName')['weight'])
+            # Party-wise Analysis
+            st.write("### Party-wise Weight Analysis")
+            party_weight_summary = filtered_df.groupby('parName')['weight'].sum().reset_index()
+            top_10_parties = party_weight_summary.sort_values(by='weight', ascending=False).head(10)
+            st.bar_chart(top_10_parties.set_index('parName')['weight'])
 
-                st.write("### Bottom 5 Parties by Weight")
-                st.bar_chart(bottom_5_parties.set_index('parName')['weight'])
+            # Rank of Selected Party
+            st.write("### Check Rank of a Party")
+            party_name = st.selectbox("Select a Party:", options=party_weight_summary['parName'].unique())
+            if party_name:
+                party_rank = party_weight_summary.sort_values(by='weight', ascending=False)
+                party_rank['Rank'] = party_rank['weight'].rank(ascending=False, method='dense')
+                selected_party = party_rank[party_rank['parName'] == party_name]
+                st.write(f"**Party Name:** {party_name}")
+                st.write(f"**Rank:** {int(selected_party['Rank'].values[0])}")
+                st.write(f"**Total Weight:** {selected_party['weight'].values[0]:.2f}")
 
-                # Time series for weight
-                df['DocDate'] = pd.to_datetime(df['DocDate'])
-                time_series = df.groupby('DocDate')['weight'].sum().reset_index()
-                st.write("### Total Weight Over Time")
-                st.line_chart(time_series.set_index('DocDate')['weight'])
+            # Category-wise Analysis
+            st.write("### Top Categories by Weight")
+            category_summary = filtered_df.groupby('CATEGORY')['weight'].sum().reset_index()
+            category_summary_sorted = category_summary.sort_values(by='weight', ascending=False).head(10)
+            st.bar_chart(category_summary_sorted.set_index('CATEGORY')['weight'])
 
-        # Analysis for Export Data
-        elif file_type == "Export":
-            # Required Columns Check
-            required_columns_export = ['DATE', 'PARTY', 'WEIGHT', 'QTY', 'TYPE', 'SIZE', 'DESIGN NO']
-            if not all(col in data.columns for col in required_columns_export):
-                st.error(f"The Export dataset must contain these columns: {required_columns_export}")
-            else:
-                st.write("### Summary Statistics")
-                st.write("Statistics for WEIGHT:")
-                st.dataframe(data['WEIGHT'].describe())
+            # Weight Over Time
+            st.write("### Total Weight Over Time")
+            weight_over_time = filtered_df.groupby('DocDate')['weight'].sum().reset_index()
+            st.line_chart(weight_over_time.set_index('DocDate')['weight'])
 
-                st.write("Statistics for QTY:")
-                st.dataframe(data['QTY'].describe())
+            # Download Filtered Data
+            st.write("### Download Filtered Dataset")
+            csv = filtered_df.to_csv(index=False)
+            st.download_button("Download CSV", csv, "filtered_data.csv", "text/csv")
 
-                # Unique values
-                st.write(f"**Unique Parties:** {data['PARTY'].nunique()}")
-                st.write(f"**Unique Types:** {data['TYPE'].nunique()}")
-                st.write(f"**Unique Sizes:** {data['SIZE'].nunique()}")
-
-                # Time-Based Analysis
-                data['DATE'] = pd.to_datetime(data['DATE'])
-                time_summary = data.groupby('DATE').agg({'WEIGHT': 'sum', 'QTY': 'sum'}).reset_index()
-
-                st.write("### Weight and Quantity Over Time")
-                fig, ax = plt.subplots(figsize=(10, 6))
-                sns.lineplot(x='DATE', y='WEIGHT', data=time_summary, marker='o', label='Weight', ax=ax)
-                sns.lineplot(x='DATE', y='QTY', data=time_summary, marker='o', label='Quantity', ax=ax)
-                plt.title("Weight and Quantity Over Time")
-                plt.xlabel("Date")
-                plt.ylabel("Total")
-                plt.legend()
-                st.pyplot(fig)
-
-                # Party Analysis
-                party_summary = data.groupby('PARTY')['WEIGHT'].sum().reset_index()
-                top_10_parties = party_summary.sort_values(by='WEIGHT', ascending=False).head(10)
-                st.write("### Top 10 Parties by Total Weight")
-                st.bar_chart(top_10_parties.set_index('PARTY')['WEIGHT'])
-
-                # Type-Based Analysis
-                type_summary = data.groupby('TYPE').agg({'WEIGHT': 'sum', 'QTY': 'sum'}).reset_index()
-                st.write("### Weight by Type")
-                fig, ax = plt.subplots()
-                sns.barplot(x='WEIGHT', y='TYPE', data=type_summary, palette='viridis', ax=ax)
-                plt.title("Weight by Type")
-                st.pyplot(fig)
-
-                # Size-Based Analysis
-                size_summary = data.groupby('SIZE')['WEIGHT'].sum().reset_index()
-                st.write("### Weight by Size")
-                st.bar_chart(size_summary.set_index('SIZE')['WEIGHT'])
-
-                # Correlation Analysis
-                numerical_data = data[['WEIGHT', 'QTY']]
-                st.write("### Correlation Matrix")
-                st.dataframe(numerical_data.corr())
-
-                # Scatter Plot
-                st.write("### Scatter Plot: Weight vs Quantity")
-                fig, ax = plt.subplots()
-                sns.scatterplot(x='WEIGHT', y='QTY', data=data, hue='TYPE', palette='tab10', ax=ax)
-                plt.title("Weight vs Quantity")
-                st.pyplot(fig)
     except Exception as e:
-        st.error(f"Error processing the file: {e}")
+        st.error(f"Error processing file: {e}")
 else:
-    st.info("Awaiting file upload...")
+    st.info("Please upload a valid Excel/CSV file.")
 
