@@ -1,6 +1,3 @@
-Sure, I can help you convert this code into a Streamlit app. Here's how you can do it:
-
-```python
 import streamlit as st
 import pandas as pd
 import numpy as np
