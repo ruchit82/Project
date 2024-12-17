@@ -128,11 +128,4 @@ st.title("Excel Data Analysis App")
 file_path = st.text_input("Please enter the file path to your Excel file:")
 if file_path:
     analyze_excel_data(file_path)
-```
-
-This code will create a Streamlit app that allows you to upload an Excel file, analyze the data, and visualize the results. The dropdown for party selection is included to check the rank and details of a specific party.
-
-    
-
-
 
