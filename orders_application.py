@@ -46,7 +46,7 @@ def combine_image_with_text(image, details):
     font = ImageFont.truetype(font_path, size=16)  # Set font size to 20, bold
     text_width = 300
     canvas_width = image.width + text_width
-    canvas_height = max(image.height, 200)
+    canvas_height = max(image.height, 450)
 
     combined_image = Image.new("RGB", (canvas_width, canvas_height), "white")
     draw = ImageDraw.Draw(combined_image)
