@@ -43,8 +43,8 @@ def resize_image(image, max_width=300):
 # Function to combine image and text
 def combine_image_with_text(image, details):
     font_path = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"  # Path to system font
-    font = ImageFont.truetype(font_path, size=20)  # Set font size to 20, bold
-    text_width = 400
+    font = ImageFont.truetype(font_path, size=16)  # Set font size to 20, bold
+    text_width = 300
     canvas_width = image.width + text_width
     canvas_height = max(image.height, 200)
 
@@ -55,7 +55,7 @@ def combine_image_with_text(image, details):
     y_position = 10
     for key, value in details.items():
         draw.text((10, y_position), f"{key}: {value}", fill="black", font=font)
-        y_position += 30  # Increased line spacing for larger font
+        y_position += 26  # Increased line spacing for larger font
 
     # Paste the image on the right side
     combined_image.paste(image, (text_width, 0))
