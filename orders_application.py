@@ -95,7 +95,7 @@ def delete_orders(excel_file_path, date_to_delete=None):
         st.info("No data exists yet.")
 
 # Streamlit app
-users = {"user1": "password1", "user2": "password2"}
+users = {"user1": "password1", "user2": "password2", "user3": "password3"}
 username = login(users)
 
 if username:
