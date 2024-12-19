@@ -127,10 +127,11 @@ if username:
                 image = resize_image(image)
 
             details = {
-                "Order No": Order_no if Order_no else "N/A",
-                "Date": str(Date),
-                "Party Name": Party_name if Party_name else "N/A",
+              
+                "Date": str(Date), 
                 "Party Code": Party_code if Party_code else "N/A",
+                "Order No": Order_no if Order_no else "N/A",
+                "Party Name": Party_name if Party_name else "Party Code",
                 "Weight": Weight if Weight else "N/A",
                 "Size": Size if Size else "N/A",
                 "PCS": PCS if PCS else "N/A",
