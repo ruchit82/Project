@@ -41,35 +41,28 @@ def resize_image(image, max_width=300):
         new_height = int((max_width / image.width) * image.height)
         return image.resize((max_width, new_height))
     return image
-
 # Function to dynamically adjust canvas size and font size
 def adjust_canvas_and_font(image, details):
-    # Define a base font size and dynamically adjust based on text length
-    base_font_size = 16
-    font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", base_font_size)
+    font_path = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
+    font = ImageFont.truetype(font_path, size=16)  # Default font size
     text_height = 0
 
-    # Calculate the total height of the text
+    # Calculate text height based on the details length
     for key, value in details.items():
-        text_height += font.getsize(f"{key}: {value}")[1] + 10  # Add padding between lines
-
-    # Define canvas size based on text height and image width
-    canvas_width = image.width + 300
-    canvas_height = max(image.height, text_height + 20)  # Ensure the canvas is large enough for text
-
-    # Adjust font size to fit the text into the canvas
-    while text_height > canvas_height - 50 and base_font_size > 12:
-        base_font_size -= 1
-        font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", base_font_size)
-        text_height = 0
-        for key, value in details.items():
-            text_height += font.getsize(f"{key}: {value}")[1] + 10
+        bbox = font.getbbox(f"{key}: {value}")  # Get the bounding box of the text
+        text_height += bbox[3] - bbox[1] + 10  # Add padding between lines
+    
+    # Adjust canvas height based on text height
+    canvas_height = max(image.height, text_height + 50)  # Ensure there's enough space
+    canvas_width = image.width + 300  # Leave space for the text
 
     return canvas_width, canvas_height, font
 
-# Function to combine image and text
+# Updated function to combine image and text with dynamic canvas size and font adjustment
 def combine_image_with_text(image, details):
     canvas_width, canvas_height, font = adjust_canvas_and_font(image, details)
+
+    # Create a blank canvas
     combined_image = Image.new("RGB", (canvas_width, canvas_height), "white")
     draw = ImageDraw.Draw(combined_image)
 
@@ -77,12 +70,14 @@ def combine_image_with_text(image, details):
     y_position = 10
     for key, value in details.items():
         draw.text((10, y_position), f"{key}: {value}", fill="black", font=font)
-        y_position += font.getsize(f"{key}: {value}")[1] + 10  # Dynamic line height based on font size
+        bbox = font.getbbox(f"{key}: {value}")
+        y_position += bbox[3] - bbox[1] + 10  # Adjust position based on text size
 
     # Paste the image on the right side
     combined_image.paste(image, (canvas_width - image.width, 0))
 
     return combined_image
+
 
 # Function to save data to Excel
 def save_to_excel(details, excel_file_path):
