@@ -40,42 +40,25 @@ def resize_image(image, max_width=300):
         return image.resize((max_width, new_height))
     return image
 
-# Function to dynamically adjust canvas size and font size
-def adjust_canvas_and_font(image, details):
-    font_path = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
-    font = ImageFont.truetype(font_path, size=16)  # Default font size
-    text_height = 0
+# Function to combine image and text
+def combine_image_with_text(image, details):
+    font_path = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"  # Path to system font
+    font = ImageFont.truetype(font_path, size=16)  # Set font size to 20, bold
+    text_width = 300
+    canvas_width = image.width + text_width
+    canvas_height = max(image.height, 450)
 
-    # Calculate text height based on the details length
-    for key, value in details.items():
-        bbox = font.getbbox(f"{key}: {value}")  # Get the bounding box of the text
-        text_height += bbox[3] - bbox[1] + 10  # Add padding between lines
-    
-    # Adjust canvas height based on text height
-    canvas_height = max(image.height, text_height + 50)  # Ensure there's enough space
-    canvas_width = image.width + 300  # Leave space for the text
-
-    return canvas_width, canvas_height, font
-
-# Updated function to combine image and text with dynamic canvas size and font adjustment
-def combine_image_with_text(image, details_list):
-    # Get total text height from all details in list
-    canvas_width, total_height, font = adjust_canvas_and_font(image, details_list[0])
-
-    # Create a blank canvas
-    combined_image = Image.new("RGB", (canvas_width, total_height), "white")
+    combined_image = Image.new("RGB", (canvas_width, canvas_height), "white")
     draw = ImageDraw.Draw(combined_image)
 
-    # Draw all details from list on the left side
+    # Draw text on the left side
     y_position = 10
-    for details in details_list:
-        for key, value in details.items():
-            draw.text((10, y_position), f"{key}: {value}", fill="black", font=font)
-            bbox = font.getbbox(f"{key}: {value}")
-            y_position += bbox[3] - bbox[1] + 10  # Adjust position based on text size
+    for key, value in details.items():
+        draw.text((10, y_position), f"{key}: {value}", fill="black", font=font)
+        y_position += 26  # Increased line spacing for larger font
 
     # Paste the image on the right side
-    combined_image.paste(image, (canvas_width - image.width, 0))
+    combined_image.paste(image, (text_width, 0))
 
     return combined_image
 
@@ -120,7 +103,6 @@ if username:
     menu = st.sidebar.radio("Select an option", ["Add New Order", "View Summary Report", "Search Order", "Delete Orders", "Download Data"])
 
     excel_file_path = f"{username}_order_details.xlsx"
-    order_details = []
 
     if menu == "Add New Order":
         st.title("Add New Order")
@@ -145,10 +127,11 @@ if username:
                 image = resize_image(image)
 
             details = {
-                "Date": str(Date),
+              
+                "Date": str(Date), 
                 "Party Code": Party_code if Party_code else "N/A",
                 "Order No": Order_no if Order_no else "N/A",
-                "Party Name": Party_name if Party_name else "N/A",
+                "Party Name": Party_name if Party_name else "Party Code",
                 "Weight": Weight if Weight else "N/A",
                 "Size": Size if Size else "N/A",
                 "PCS": PCS if PCS else "N/A",
@@ -156,15 +139,9 @@ if username:
                 "Remark": Remark if Remark else "N/A",
             }
 
-            # Store details and allow multiple entries
-            order_details.append(details)
-
-            if st.button("Add More Details"):
-                st.session_state.order_details = order_details
-
             # Combine image and text if image is provided
             if image:
-                combined_image = combine_image_with_text(image, order_details)
+                combined_image = combine_image_with_text(image, details)
                 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
                 output_image_path = f"combined_order_image_{Order_no}_{timestamp}.png"
                 combined_image.save(output_image_path)
@@ -236,5 +213,3 @@ if username:
                 )
         else:
             st.info("No data file exists yet.")
-
-   
