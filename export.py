@@ -6,146 +6,101 @@ import seaborn as sns
 import streamlit as st
 import io
 
-# Streamlit configurations
-st.set_page_config(page_title="Export Sales Analysis", layout="wide", page_icon="📊")
 
-# Custom CSS for professional styling
-st.markdown(
-    """
-    <style>
-    /* Main Page Styling */
-    .main { background-color: #f4f4f4; font-family: 'Arial', sans-serif; }
-    h1, h2, h3 { color: #333333; font-weight: bold; }
-    
-    /* Sidebar Styling */
-    .css-1vbd788 {
-        background-color: #393e46 !important; 
-        color: white !important; 
-        border-radius: 10px; 
-        padding: 0.5rem;
-    }
-    .css-1vbd788:hover {
-        background-color: #222831 !important; 
-        color: #ffffff !important;
-    }
 
-    /* Tooltip and Chart Interactivity */
-    .tooltip { font-size: 0.85rem; color: #666666; }
-    </style>
-    """,
-    unsafe_allow_html=True,
-)
-
-st.title("📊 Export Sales Analysis Dashboard")
-
-# Sidebar for navigation
-st.sidebar.title("Navigation")
-st.sidebar.write("Use the options below to navigate:")
-menu = st.sidebar.radio(
-    "Sections",
-    [
-        "Upload Data",
-        "Summary Statistics",
-        "Time-Based Analysis",
-        "Party-Based Analysis",
-        "Design-Based Analysis",
-        "Interactive Search",
-    ],
-)
-
-# Upload Data Section
-uploaded_file = st.sidebar.file_uploader("📤 Upload Your Excel File", type=["xlsx", "xls"])
+# File uploader
+uploaded_file = st.file_uploader("Upload your data file", type=["xlsx"])
 
 if uploaded_file:
     # Load data
     data = pd.read_excel(uploaded_file)
-    data["DATE"] = pd.to_datetime(data["DATE"])
 
-    # Data Preprocessing
-    party_summary = data.groupby("PARTY")["WEIGHT"].sum().reset_index().sort_values(by="WEIGHT", ascending=False)
-    party_summary["RANK"] = range(1, len(party_summary) + 1)
-    design_summary = data.groupby("DESIGN")["WEIGHT"].sum().reset_index().sort_values(by="WEIGHT", ascending=False)
+    # Check for required columns
+    required_columns = ["DATE", "PARTY", "DESIGN NO", "TYPE", "WEIGHT", "QTY", "SIZE"]
+    missing_columns = [col for col in required_columns if col not in data.columns]
 
-    st.success("Data uploaded successfully!")
+    if missing_columns:
+        st.error(f"The following required columns are missing from the uploaded file: {', '.join(missing_columns)}")
+    else:
+        # Standardize column names
+        data.columns = data.columns.str.upper()
 
-    # Display key graphs immediately after upload
-    st.write("### Key Insights")
-    col1, col2 = st.columns(2)
+        # Convert date column to datetime
+        data["DATE"] = pd.to_datetime(data["DATE"])
 
-    with col1:
-        st.write("#### Top 10 Parties by Weight")
-        top_10_parties = party_summary.head(10)
-        fig, ax = plt.subplots(figsize=(10, 6))
-        sns.barplot(data=top_10_parties, x="WEIGHT", y="PARTY", palette="viridis", ax=ax)
-        ax.set_title("Top 10 Parties by Weight", fontsize=14)
-        st.pyplot(fig)
+        # Summarize data by PARTY
+        party_summary = data.groupby("PARTY")["WEIGHT"].sum().reset_index().sort_values(by="WEIGHT", ascending=False)
+        party_summary["RANK"] = range(1, len(party_summary) + 1)
 
-    with col2:
-        st.write("#### Top 10 Designs by Weight")
-        top_10_designs = design_summary.head(10)
-        fig, ax = plt.subplots(figsize=(10, 6))
-        sns.barplot(data=top_10_designs, x="WEIGHT", y="DESIGN", palette="coolwarm", ax=ax)
-        ax.set_title("Top 10 Designs by Weight", fontsize=14)
-        st.pyplot(fig)
+        # Summarize data by DESIGN NO
+        design_summary = data.groupby("DESIGN NO")["WEIGHT"].sum().reset_index().sort_values(by="WEIGHT", ascending=False)
 
-    # Navigation menu options
-    if menu == "Summary Statistics":
-        st.write("### Summary Statistics")
-        col1, col2 = st.columns(2)
-        with col1:
-            st.write("#### Weight Statistics")
-            st.write(data["WEIGHT"].describe())
-        with col2:
-            st.write("#### Quantity Statistics")
-            st.write(data["QTY"].describe())
+        st.success("Data uploaded successfully!")
 
-    elif menu == "Time-Based Analysis":
-        st.write("### Time-Based Analysis")
-        time_summary = data.groupby("DATE").agg({"WEIGHT": "sum", "QTY": "sum"}).reset_index()
+        # Create the layout with a sidebar for navigation
+        st.sidebar.title("Dashboard Navigation")
+        app_mode = st.sidebar.radio("Select a page:", ["Home", "Party Summary", "Design Summary"])
 
-        col1, col2 = st.columns(2)
-        with col1:
-            st.write("#### Weight Over Time")
+        if app_mode == "Home":
+            # Home Page: Display the main title and the upload feature
+            st.write("# Welcome to the Data Analysis Dashboard")
+            st.write("Upload your data to get started.")
+
+            # Display graphs immediately after upload
+            st.write("### Key Insights")
+            col1, col2 = st.columns(2)
+
+            with col1:
+                st.write("#### Top 10 Parties by Weight")
+                top_10_parties = party_summary.head(10)
+                fig, ax = plt.subplots(figsize=(10, 6))
+                sns.barplot(data=top_10_parties, x="WEIGHT", y="PARTY", palette="viridis", ax=ax)
+                ax.set_title("Top 10 Parties by Weight", fontsize=14)
+                st.pyplot(fig)
+
+            with col2:
+                st.write("#### Top 10 Designs by Weight")
+                top_10_designs = design_summary.head(10)
+                fig, ax = plt.subplots(figsize=(10, 6))
+                sns.barplot(data=top_10_designs, x="WEIGHT", y="DESIGN NO", palette="coolwarm", ax=ax)
+                ax.set_title("Top 10 Designs by Weight", fontsize=14)
+                st.pyplot(fig)
+
+        elif app_mode == "Party Summary":
+            # Party Summary Page: Display the summary for Party
+            st.write("## Party Summary")
+            st.write("This page provides insights on the total weight per party.")
+
+            # Select a party to filter and view
+            party_name = st.selectbox("Enter Party Name to Search:", party_summary["PARTY"].unique())
+            selected_party_data = data[data["PARTY"] == party_name]
+
+            st.write(f"### Details for Party: {party_name}")
+            st.write(selected_party_data)
+
+            # Display party data graph
+            party_data = party_summary[party_summary["PARTY"] == party_name]
             fig, ax = plt.subplots(figsize=(10, 6))
-            sns.lineplot(data=time_summary, x="DATE", y="WEIGHT", marker="o", ax=ax)
-            ax.set_title("Weight Trend Over Time")
-            plt.xticks(rotation=45)
+            sns.barplot(data=party_data, x="WEIGHT", y="PARTY", palette="Blues", ax=ax)
+            ax.set_title(f"Weight for {party_name}", fontsize=14)
             st.pyplot(fig)
 
-        with col2:
-            st.write("#### Quantity Over Time")
+        elif app_mode == "Design Summary":
+            # Design Summary Page: Display the summary for Design
+            st.write("## Design Summary")
+            st.write("This page provides insights on the total weight per design.")
+
+            # Select a design to filter and view
+            design_no = st.selectbox("Enter Design No to Search:", design_summary["DESIGN NO"].unique())
+            selected_design_data = data[data["DESIGN NO"] == design_no]
+
+            st.write(f"### Details for Design No: {design_no}")
+            st.write(selected_design_data)
+
+            # Display design data graph
+            design_data = design_summary[design_summary["DESIGN NO"] == design_no]
             fig, ax = plt.subplots(figsize=(10, 6))
-            sns.lineplot(data=time_summary, x="DATE", y="QTY", marker="o", ax=ax)
-            ax.set_title("Quantity Trend Over Time")
-            plt.xticks(rotation=45)
+            sns.barplot(data=design_data, x="WEIGHT", y="DESIGN NO", palette="coolwarm", ax=ax)
+            ax.set_title(f"Weight for Design No: {design_no}", fontsize=14)
             st.pyplot(fig)
 
-    elif menu == "Party-Based Analysis":
-        st.write("### Party-Based Analysis")
-        st.write("#### Top 10 Parties by Weight")
-        fig, ax = plt.subplots(figsize=(12, 6))
-        sns.barplot(data=top_10_parties, x="WEIGHT", y="PARTY", palette="viridis", ax=ax)
-        ax.set_title("Top 10 Parties by Weight", fontsize=14)
-        st.pyplot(fig)
-
-    elif menu == "Design-Based Analysis":
-        st.write("### Design-Based Analysis")
-        st.write("#### Top 10 Designs by Weight")
-        fig, ax = plt.subplots(figsize=(12, 6))
-        sns.barplot(data=top_10_designs, x="WEIGHT", y="DESIGN", palette="coolwarm", ax=ax)
-        ax.set_title("Top 10 Designs by Weight", fontsize=14)
-        st.pyplot(fig)
-
-    elif menu == "Interactive Search":
-        st.write("### Search Party Details")
-        party_name = st.selectbox(
-            "Enter Party Name to Search:",
-            options=party_summary["PARTY"].values,
-        )
-        if party_name:
-            rank = party_summary.loc[party_summary["PARTY"] == party_name, "RANK"].values[0]
-            weight = party_summary.loc[party_summary["PARTY"] == party_name, "WEIGHT"].values[0]
-            st.success(f"Party `{party_name}` is ranked #{rank} with a total weight of {weight}.")
-
-else:
-    st.info("📂 Please upload a valid Excel file to begin analysis.")
