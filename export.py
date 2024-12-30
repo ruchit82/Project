@@ -42,8 +42,10 @@ uploaded_file = st.sidebar.file_uploader("Upload the Export Sales Excel File", t
 if uploaded_file:
     # Load data
     data = pd.read_excel(uploaded_file)
-    data['DATE'] = pd.to_datetime(data['DATE'])
-
+    
+    # Convert the 'DATE' column to datetime format (if it's not already)
+    data['DATE'] = pd.to_datetime(data['DATE'], errors='coerce')
+    
     # Filter data based on the selected date range
     filtered_data = data[(data['DATE'] >= start_date) & (data['DATE'] <= end_date)]
 
