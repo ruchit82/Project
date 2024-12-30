@@ -20,7 +20,7 @@ st.sidebar.title("Navigation")
 st.sidebar.write("Use the options below to navigate:")
 menu = st.sidebar.radio(
     "Sections", 
-    ["Upload Data", "Summary Statistics", "Time-Based Analysis", "Party-Based Analysis", "Party Ranking", "Type-Based Analysis", "Size-Based Analysis", "Design-Based Analysis", "Correlation Analysis", "Scatter & Violin Plots"]
+    ["Upload Data","Party Ranking","Party-Based Analysis","Design-Based Analysis","Summary Statistics", "Time-Based Analysis", "Type-Based Analysis", "Size-Based Analysis", , "Correlation Analysis", "Scatter & Violin Plots"]
 )
 
 # Upload Excel file
