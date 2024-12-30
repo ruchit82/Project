@@ -16,12 +16,19 @@ st.markdown(
     /* Main Page Styling */
     .main { background-color: #f4f4f4; font-family: 'Arial', sans-serif; }
     h1, h2, h3 { color: #333333; font-weight: bold; }
-    .stSidebar { background-color: #222831; color: white; }
-    .block-container { padding: 2rem; }
     
-    /* Navigation Bar Styling */
-    .css-1vbd788 { color: #ffffff; background-color: #393e46; border-radius: 10px; padding: 0.5rem; }
-    
+    /* Sidebar Styling */
+    .css-1vbd788 {
+        background-color: #393e46 !important; 
+        color: white !important; 
+        border-radius: 10px; 
+        padding: 0.5rem;
+    }
+    .css-1vbd788:hover {
+        background-color: #222831 !important; 
+        color: #ffffff !important;
+    }
+
     /* Tooltip and Chart Interactivity */
     .tooltip { font-size: 0.85rem; color: #666666; }
     </style>
@@ -41,10 +48,7 @@ menu = st.sidebar.radio(
         "Summary Statistics",
         "Time-Based Analysis",
         "Party-Based Analysis",
-        "Type-Based Analysis",
-        "Size-Based Analysis",
         "Design-Based Analysis",
-        "Correlation Analysis",
         "Interactive Search",
     ],
 )
@@ -60,19 +64,32 @@ if uploaded_file:
     # Data Preprocessing
     party_summary = data.groupby("PARTY")["WEIGHT"].sum().reset_index().sort_values(by="WEIGHT", ascending=False)
     party_summary["RANK"] = range(1, len(party_summary) + 1)
+    design_summary = data.groupby("DESIGN")["WEIGHT"].sum().reset_index().sort_values(by="WEIGHT", ascending=False)
 
-    if menu == "Upload Data":
-        st.write("### Data Preview")
-        st.dataframe(data.head(10))
+    st.success("Data uploaded successfully!")
 
-        st.write("### Dataset Information")
-        with st.expander("View Details"):
-            buffer = io.StringIO()
-            data.info(buf=buffer)
-            info_string = buffer.getvalue()
-            st.text(info_string)
+    # Display key graphs immediately after upload
+    st.write("### Key Insights")
+    col1, col2 = st.columns(2)
 
-    elif menu == "Summary Statistics":
+    with col1:
+        st.write("#### Top 10 Parties by Weight")
+        top_10_parties = party_summary.head(10)
+        fig, ax = plt.subplots(figsize=(10, 6))
+        sns.barplot(data=top_10_parties, x="WEIGHT", y="PARTY", palette="viridis", ax=ax)
+        ax.set_title("Top 10 Parties by Weight", fontsize=14)
+        st.pyplot(fig)
+
+    with col2:
+        st.write("#### Top 10 Designs by Weight")
+        top_10_designs = design_summary.head(10)
+        fig, ax = plt.subplots(figsize=(10, 6))
+        sns.barplot(data=top_10_designs, x="WEIGHT", y="DESIGN", palette="coolwarm", ax=ax)
+        ax.set_title("Top 10 Designs by Weight", fontsize=14)
+        st.pyplot(fig)
+
+    # Navigation menu options
+    if menu == "Summary Statistics":
         st.write("### Summary Statistics")
         col1, col2 = st.columns(2)
         with col1:
@@ -103,6 +120,22 @@ if uploaded_file:
             plt.xticks(rotation=45)
             st.pyplot(fig)
 
+    elif menu == "Party-Based Analysis":
+        st.write("### Party-Based Analysis")
+        st.write("#### Top 10 Parties by Weight")
+        fig, ax = plt.subplots(figsize=(12, 6))
+        sns.barplot(data=top_10_parties, x="WEIGHT", y="PARTY", palette="viridis", ax=ax)
+        ax.set_title("Top 10 Parties by Weight", fontsize=14)
+        st.pyplot(fig)
+
+    elif menu == "Design-Based Analysis":
+        st.write("### Design-Based Analysis")
+        st.write("#### Top 10 Designs by Weight")
+        fig, ax = plt.subplots(figsize=(12, 6))
+        sns.barplot(data=top_10_designs, x="WEIGHT", y="DESIGN", palette="coolwarm", ax=ax)
+        ax.set_title("Top 10 Designs by Weight", fontsize=14)
+        st.pyplot(fig)
+
     elif menu == "Interactive Search":
         st.write("### Search Party Details")
         party_name = st.selectbox(
@@ -114,16 +147,5 @@ if uploaded_file:
             weight = party_summary.loc[party_summary["PARTY"] == party_name, "WEIGHT"].values[0]
             st.success(f"Party `{party_name}` is ranked #{rank} with a total weight of {weight}.")
 
-    elif menu == "Party-Based Analysis":
-        st.write("### Party-Based Analysis")
-        st.write("#### Top 10 Parties by Weight")
-        top_10_parties = party_summary.head(10)
-
-        fig, ax = plt.subplots(figsize=(12, 6))
-        sns.barplot(data=top_10_parties, x="WEIGHT", y="PARTY", palette="viridis", ax=ax)
-        ax.set_title("Top 10 Parties by Weight", fontsize=14)
-        st.pyplot(fig)
-
 else:
     st.info("📂 Please upload a valid Excel file to begin analysis.")
-
