@@ -20,7 +20,7 @@ st.sidebar.title("Navigation")
 st.sidebar.write("Use the options below to navigate:")
 menu = st.sidebar.radio(
     "Sections", 
-    ["Upload Data", "Summary Statistics", "Time-Based Analysis", "Party-Based Analysis", "Type-Based Analysis", "Size-Based Analysis", "Design-Based Analysis", "Correlation Analysis", "Scatter & Violin Plots"]
+    ["Upload Data", "Summary Statistics", "Time-Based Analysis", "Party-Based Analysis", "Party Ranking", "Type-Based Analysis", "Size-Based Analysis", "Design-Based Analysis", "Correlation Analysis", "Scatter & Violin Plots"]
 )
 
 # Upload Excel file
@@ -30,11 +30,6 @@ if uploaded_file:
     # Load data
     data = pd.read_excel(uploaded_file)
     data['DATE'] = pd.to_datetime(data['DATE'])
-
-    # Party Ranking (add rank based on total weight per party)
-    party_summary = data.groupby('PARTY')['WEIGHT'].sum().reset_index()
-    party_summary['Rank'] = party_summary['WEIGHT'].rank(ascending=False, method='min')
-    party_summary = party_summary.sort_values(by='Rank')
 
     # Main Dashboard Content
     if menu == "Upload Data":
@@ -71,91 +66,92 @@ if uploaded_file:
         fig1, ax1 = plt.subplots(figsize=(10, 6))
         sns.lineplot(x='DATE', y='WEIGHT', data=time_summary, marker='o', label='Weight')
         sns.lineplot(x='DATE', y='QTY', data=time_summary, marker='o', label='Quantity')
-        ax1.set_title("Weight and Quantity Over Time")
+        ax1.set_title("Weight and Quantity Over Time", fontsize=16, fontweight='bold')
         plt.xlabel("Date")
         plt.ylabel("Total")
         plt.legend()
         st.pyplot(fig1)
 
     elif menu == "Party-Based Analysis":
-        # Dropdown for party selection
-        selected_party = st.selectbox("Select Party", options=party_summary['PARTY'].tolist())
-        
-        st.write("### Party-Based Analysis")
-
-        # Display party rank and analysis
-        party_rank = party_summary[party_summary['PARTY'] == selected_party].iloc[0]
-        st.write(f"#### Party: {selected_party}")
-        st.write(f"Rank: {int(party_rank['Rank'])} | Total Weight: {party_rank['WEIGHT']}")
-
-        # Plot weight for selected party
-        party_data = data[data['PARTY'] == selected_party]
-        fig2, ax2 = plt.subplots(figsize=(8, 6))
-        sns.barplot(x='DESIGN NO', y='WEIGHT', data=party_data, palette='Blues')
-        ax2.set_title(f"Weight Distribution by Design for {selected_party}")
-        plt.xticks(rotation=45)
-        st.pyplot(fig2)
-
-        # Display top 10 and bottom 5 parties by weight
-        st.write("#### Top 10 Parties")
+        st.write("### Top and Bottom Parties by Weight")
+        party_summary = data.groupby('PARTY')['WEIGHT'].sum().reset_index()
         top_10_parties = party_summary.sort_values(by='WEIGHT', ascending=False).head(10)
-        fig3, ax3 = plt.subplots(figsize=(8, 6))
-        sns.barplot(x='WEIGHT', y='PARTY', data=top_10_parties, palette='Blues_r')
-        ax3.set_title("Top 10 Parties by Weight")
-        st.pyplot(fig3)
-
-        st.write("#### Bottom 5 Parties")
         bottom_5_parties = party_summary.sort_values(by='WEIGHT').head(5)
-        fig4, ax4 = plt.subplots(figsize=(8, 6))
-        sns.barplot(x='WEIGHT', y='PARTY', data=bottom_5_parties, palette='Reds_r')
-        ax4.set_title("Bottom 5 Parties by Weight")
-        st.pyplot(fig4)
+
+        col1, col2 = st.columns(2)
+        with col1:
+            st.write("#### Top 10 Parties")
+            fig2, ax2 = plt.subplots(figsize=(8, 6))
+            sns.barplot(x='WEIGHT', y='PARTY', data=top_10_parties, palette='Blues_r')
+            ax2.set_title("Top 10 Parties by Weight", fontsize=14, fontweight='bold')
+            st.pyplot(fig2)
+        with col2:
+            st.write("#### Bottom 5 Parties")
+            fig3, ax3 = plt.subplots(figsize=(8, 6))
+            sns.barplot(x='WEIGHT', y='PARTY', data=bottom_5_parties, palette='Reds_r')
+            ax3.set_title("Bottom 5 Parties by Weight", fontsize=14, fontweight='bold')
+            st.pyplot(fig3)
+
+    elif menu == "Party Ranking":
+        st.write("### Party Ranking by Total Weight")
+        party_summary = data.groupby('PARTY')['WEIGHT'].sum().reset_index()
+        party_summary['Rank'] = party_summary['WEIGHT'].rank(ascending=False, method='min')
+        party_summary = party_summary.sort_values(by='Rank')
+
+        st.write("#### Party Ranking Table")
+        st.dataframe(party_summary[['Rank', 'PARTY', 'WEIGHT']].style.highlight_max(axis=0, color='lightgreen'))
+
+        # Party Dropdown
+        selected_party = st.selectbox("Select a Party", options=party_summary['PARTY'].unique())
+        party_details = party_summary[party_summary['PARTY'] == selected_party]
+        st.write(f"### Details for {selected_party}")
+        st.write(party_details)
 
     elif menu == "Type-Based Analysis":
         st.write("### Type-Based Analysis")
         type_summary = data.groupby('TYPE').agg({'WEIGHT': 'sum', 'QTY': 'sum'}).reset_index()
-        fig5, ax5 = plt.subplots(figsize=(10, 6))
+        fig4, ax4 = plt.subplots(figsize=(10, 6))
         sns.barplot(x='WEIGHT', y='TYPE', data=type_summary, palette='viridis')
-        ax5.set_title("Weight by Type")
-        st.pyplot(fig5)
+        ax4.set_title("Weight by Type", fontsize=14, fontweight='bold')
+        st.pyplot(fig4)
 
     elif menu == "Size-Based Analysis":
         st.write("### Size-Based Analysis")
         size_summary = data.groupby('SIZE').agg({'WEIGHT': 'sum'}).reset_index()
-        fig6, ax6 = plt.subplots(figsize=(10, 6))
+        fig5, ax5 = plt.subplots(figsize=(10, 6))
         sns.barplot(x='SIZE', y='WEIGHT', data=size_summary, palette='coolwarm')
-        ax6.set_title("Weight by Size")
-        st.pyplot(fig6)
+        ax5.set_title("Weight by Size", fontsize=14, fontweight='bold')
+        st.pyplot(fig5)
 
     elif menu == "Design-Based Analysis":
         st.write("### Top 5 Designs by Weight")
         design_summary = data.groupby('DESIGN NO')['WEIGHT'].sum().reset_index()
         top_5_designs = design_summary.sort_values(by='WEIGHT', ascending=False).head(5)
-        fig7, ax7 = plt.subplots(figsize=(8, 6))
+        fig6, ax6 = plt.subplots(figsize=(8, 6))
         sns.barplot(x='WEIGHT', y='DESIGN NO', data=top_5_designs, palette='Greens_r')
-        ax7.set_title("Top 5 Designs by Weight")
-        st.pyplot(fig7)
+        ax6.set_title("Top 5 Designs by Weight", fontsize=14, fontweight='bold')
+        st.pyplot(fig6)
 
     elif menu == "Correlation Analysis":
         st.write("### Correlation Analysis")
-        fig8, ax8 = plt.subplots(figsize=(8, 6))
+        fig7, ax7 = plt.subplots(figsize=(8, 6))
         sns.heatmap(data[['WEIGHT', 'QTY']].corr(), annot=True, cmap='coolwarm')
-        ax8.set_title("Correlation Matrix")
-        st.pyplot(fig8)
+        ax7.set_title("Correlation Matrix", fontsize=14, fontweight='bold')
+        st.pyplot(fig7)
 
     elif menu == "Scatter & Violin Plots":
         st.write("### Weight vs Quantity Scatter Plot")
-        fig9, ax9 = plt.subplots(figsize=(8, 6))
+        fig8, ax8 = plt.subplots(figsize=(8, 6))
         sns.scatterplot(x='WEIGHT', y='QTY', data=data, hue='TYPE', palette='tab10')
-        ax9.set_title("Weight vs Quantity")
-        st.pyplot(fig9)
+        ax8.set_title("Weight vs Quantity", fontsize=14, fontweight='bold')
+        st.pyplot(fig8)
 
         st.write("### Weight Distribution by Party")
-        fig10, ax10 = plt.subplots(figsize=(10, 6))
+        fig9, ax9 = plt.subplots(figsize=(10, 6))
         sns.violinplot(x='PARTY', y='WEIGHT', data=data, scale='width')
         plt.xticks(rotation=45)
-        ax10.set_title("Weight Distribution by Party")
-        st.pyplot(fig10)
+        ax9.set_title("Weight Distribution by Party", fontsize=14, fontweight='bold')
+        st.pyplot(fig9)
 
 else:
-    st.info("Please upload an Excel file to start the analysis.")
+    st.info("📂 Please upload a valid Excel file to begin analysis.")
