@@ -35,8 +35,17 @@ def register_helper():
     rate = st.number_input("Enter Rate per Hour:", min_value=0.0)
     photo = st.file_uploader("Upload Photo", type=["jpg", "png", "jpeg"])
 
-    if st.button("Register Helper"):
+    if st.button("Register Helper", key="register_button"):
         try:
+            # Load existing data
+            df = pd.read_excel(EXCEL_FILE)
+
+            # Check for duplicate phone number
+            if contact in df['contact'].values:
+                st.warning("⚠️ A helper with this contact number already exists!")
+                return
+
+            # Save photo if uploaded
             if photo is not None:
                 photo_filename = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{photo.name}"
                 photo_path = os.path.join(UPLOADS_DIR, photo_filename)
@@ -45,6 +54,7 @@ def register_helper():
             else:
                 photo_path = "No photo uploaded"
 
+            # Add new helper data
             registration_date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             new_data = {
                 'name': name, 'age': age, 'gender': gender, 'address': address,
@@ -52,7 +62,6 @@ def register_helper():
                 'photo_path': photo_path, 'registration_date': registration_date
             }
 
-            df = pd.read_excel(EXCEL_FILE)
             df = pd.concat([df, pd.DataFrame([new_data])], ignore_index=True)
             df.to_excel(EXCEL_FILE, index=False)
 
@@ -65,7 +74,7 @@ def search_helpers():
     st.subheader("🔍 Search Helpers by Rate")
 
     max_price = st.number_input("Enter Max Rate to Filter Helpers:", min_value=0.0)
-    if st.button("Search"):
+    if st.button("Search", key="search_button"):
         try:
             df = pd.read_excel(EXCEL_FILE)
             filtered_df = df[df['rate'] <= max_price]
@@ -84,7 +93,7 @@ def download_excel():
     username = st.text_input("👤 Username")
     password = st.text_input("🔒 Password", type="password")
 
-    if st.button("Login"):
+    if st.button("Login", key="login_button"):
         if username in USER_CREDENTIALS and USER_CREDENTIALS[username] == password:
             st.success("✅ Login successful!")
 
@@ -114,11 +123,17 @@ def main():
         initial_sidebar_state="expanded"
     )
 
+    # Custom CSS Styling
     st.markdown("""
     <style>
     .main { background-color: #f8f9fa; }
     .css-18e3th9 { background-color: #ffffff; }
     .css-1d391kg { color: #007bff; font-size: 24px; font-weight: bold; }
+    .stButton > button { background-color: #007bff; color: white; border-radius: 8px; padding: 12px 24px; font-size: 16px;}
+    .stButton > button:hover { background-color: #0056b3;}
+    .stTextInput input { background-color: #f1f1f1;}
+    .stTextArea textarea { background-color: #f1f1f1;}
+    .stSelectbox select { background-color: #f1f1f1;}
     </style>
     """, unsafe_allow_html=True)
 
