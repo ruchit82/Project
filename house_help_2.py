@@ -91,14 +91,17 @@ def download_excel():
                 st.success("✅ Login successful!")
 
                 if os.path.exists(EXCEL_FILE):
-                    with open(EXCEL_FILE, "rb") as file:
-                        file_data = file.read()
+                    try:
+                        df = pd.read_excel(EXCEL_FILE)
+                        file_data = df.to_csv(index=False).encode('utf-8')
                         st.download_button(
                             label="📂 Download Excel File",
                             data=file_data,
-                            file_name="house_helps.xlsx",
-                            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                            file_name="house_helps.csv",
+                            mime="text/csv"
                         )
+                    except Exception as e:
+                        st.error(f"❌ Error while preparing the file for download: {str(e)}")
                 else:
                     st.error("❌ Excel file not found. Please ensure it exists.")
             else:
