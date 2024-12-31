@@ -81,31 +81,29 @@ def search_helpers():
 def download_excel():
     st.subheader("📥 Download Excel File")
 
-    with st.form(key='login_form'):
-        username = st.text_input("👤 Username")
-        password = st.text_input("🔒 Password", type="password")
-        login_button = st.form_submit_button(label="Login")
+    username = st.text_input("👤 Username")
+    password = st.text_input("🔒 Password", type="password")
 
-        if login_button:
-            if username in USER_CREDENTIALS and USER_CREDENTIALS[username] == password:
-                st.success("✅ Login successful!")
+    if st.button("Login"):
+        if username in USER_CREDENTIALS and USER_CREDENTIALS[username] == password:
+            st.success("✅ Login successful!")
 
-                if os.path.exists(EXCEL_FILE):
-                    try:
-                        df = pd.read_excel(EXCEL_FILE)
-                        file_data = df.to_csv(index=False).encode('utf-8')
-                        st.download_button(
-                            label="📂 Download Excel File",
-                            data=file_data,
-                            file_name="house_helps.csv",
-                            mime="text/csv"
-                        )
-                    except Exception as e:
-                        st.error(f"❌ Error while preparing the file for download: {str(e)}")
-                else:
-                    st.error("❌ Excel file not found. Please ensure it exists.")
+            if os.path.exists(EXCEL_FILE):
+                try:
+                    df = pd.read_excel(EXCEL_FILE)
+                    file_data = df.to_csv(index=False).encode('utf-8')
+                    st.download_button(
+                        label="📂 Download Excel File",
+                        data=file_data,
+                        file_name="house_helps.csv",
+                        mime="text/csv"
+                    )
+                except Exception as e:
+                    st.error(f"❌ Error while preparing the file for download: {str(e)}")
             else:
-                st.error("❌ Invalid username or password.")
+                st.error("❌ Excel file not found. Please ensure it exists.")
+        else:
+            st.error("❌ Invalid username or password.")
 
 # Main Streamlit Application
 def main():
