@@ -67,24 +67,25 @@ def register_helper():
         except Exception as e:
             st.error(f"❌ Error during registration: {str(e)}")
 
-# Function: Search Helper
+# Function: Search Helper by Rate per Day
 def search_helper():
     st.subheader("🔍 Search Helper")
 
-    search_term = st.text_input("🔎 Enter Name or Contact Number to Search:")
+    # Input for rate per day
+    rate_search = st.number_input("💵 Enter Rate per Day to Search:", min_value=0.0, step=0.1)
 
     if st.button("✅ Search Helper"):
         try:
             # Load the data
             df = pd.read_excel(EXCEL_FILE)
 
-            # Search for helpers matching the search term
-            search_results = df[df['contact'].str.contains(search_term, case=False) | df['name'].str.contains(search_term, case=False)]
+            # Search for helpers with the specified rate
+            search_results = df[df['rate'] == rate_search]
 
             if search_results.empty:
-                st.warning("⚠️ No helper found with that name or contact number.")
+                st.warning(f"⚠️ No helper found with the rate of {rate_search} per day.")
             else:
-                st.dataframe(search_results[['name', 'age', 'gender', 'rate', 'contact', 'registration_date']])
+                st.dataframe(search_results[['name', 'age', 'gender', 'rate', 'registration_date']])
         except Exception as e:
             st.error(f"❌ Error during search: {str(e)}")
 
@@ -190,4 +191,3 @@ def main():
 # Run the Streamlit App
 if __name__ == '__main__':
     main()
-
