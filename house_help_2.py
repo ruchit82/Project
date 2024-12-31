@@ -94,6 +94,10 @@ def download_excel():
     password = st.text_input("🔒 Password", type="password")
 
     if st.button("✅ Login", key="login_button"):
+        # Debug message to display entered username and password
+        st.write(f"Entered username: {username}, Entered password: {password}")
+        
+        # Compare entered credentials with predefined credentials
         if username in USER_CREDENTIALS and USER_CREDENTIALS[username] == password:
             st.success("✅ Login successful!")
 
@@ -112,7 +116,7 @@ def download_excel():
             else:
                 st.error("❌ Excel file not found. Please ensure it exists.")
         else:
-            st.error("❌ Invalid username or password.")
+            st.error(f"❌ Invalid username or password. You entered username: {username} and password: {password}")
 
 # Main Streamlit Application
 def main():
