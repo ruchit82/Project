@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-"""House Helper Management System"""
 import streamlit as st
 import pandas as pd
 import os
@@ -94,54 +92,56 @@ def search_helper():
 def admin_use():
     st.subheader("👨‍💻 Admin Panel")
 
-    username = st.text_input("👤 Username")
-    password = st.text_input("🔒 Password", type="password")
+    if "logged_in" not in st.session_state or not st.session_state.logged_in:
+        username = st.text_input("👤 Username")
+        password = st.text_input("🔒 Password", type="password")
 
-    if st.button("✅ Login", key="login_button"):
-        # Debug message to display entered username and password
-        st.write(f"Entered username: {username}, Entered password: {password}")
-        
-        # Compare entered credentials with predefined credentials
-        if username in USER_CREDENTIALS and USER_CREDENTIALS[username] == password:
-            st.success("✅ Login successful!")
+        if st.button("✅ Login", key="login_button"):
+            # Compare entered credentials with predefined credentials
+            if username in USER_CREDENTIALS and USER_CREDENTIALS[username] == password:
+                st.session_state.logged_in = True  # Set session state to logged in
+                st.success("✅ Login successful!")
+            else:
+                st.error("❌ Invalid username or password.")
+        return
 
-            # Load the data
-            df = pd.read_excel(EXCEL_FILE)
+    # Once logged in, show admin options
+    if "logged_in" in st.session_state and st.session_state.logged_in:
+        # Load the data
+        df = pd.read_excel(EXCEL_FILE)
 
-            menu = st.selectbox(
-                "Choose an Admin Action:",
-                ["Overview of Helpers", "Delete Helper", "Download Excel File"]
-            )
+        menu = st.selectbox(
+            "Choose an Admin Action:",
+            ["Overview of Helpers", "Delete Helper", "Download Excel File"]
+        )
 
-            # Overview of Helpers
-            if menu == "Overview of Helpers":
-                st.dataframe(df[['name', 'age', 'gender', 'rate', 'registration_date']])
+        # Overview of Helpers
+        if menu == "Overview of Helpers":
+            st.dataframe(df[['name', 'age', 'gender', 'rate', 'registration_date']])
 
-            # Delete Helper
-            elif menu == "Delete Helper":
-                contact_to_delete = st.text_input("Enter the contact number of the helper to delete:")
-                if st.button("Delete Helper"):
-                    if contact_to_delete in df['contact'].values:
-                        df = df[df['contact'] != contact_to_delete]
-                        df.to_excel(EXCEL_FILE, index=False)
-                        st.success("✅ Helper deleted successfully!")
-                    else:
-                        st.warning("⚠️ Helper not found with this contact number.")
+        # Delete Helper
+        elif menu == "Delete Helper":
+            contact_to_delete = st.text_input("Enter the contact number of the helper to delete:")
+            if st.button("Delete Helper"):
+                if contact_to_delete in df['contact'].values:
+                    df = df[df['contact'] != contact_to_delete]
+                    df.to_excel(EXCEL_FILE, index=False)
+                    st.success("✅ Helper deleted successfully!")
+                else:
+                    st.warning("⚠️ Helper not found with this contact number.")
 
-            # Download Excel File
-            elif menu == "Download Excel File":
-                try:
-                    file_data = df.to_csv(index=False).encode('utf-8')
-                    st.download_button(
-                        label="📂 Download Excel File",
-                        data=file_data,
-                        file_name="house_helps.csv",
-                        mime="text/csv"
-                    )
-                except Exception as e:
-                    st.error(f"❌ Error while preparing the file for download: {str(e)}")
-        else:
-            st.error(f"❌ Invalid username or password. You entered username: {username} and password: {password}")
+        # Download Excel File
+        elif menu == "Download Excel File":
+            try:
+                file_data = df.to_csv(index=False).encode('utf-8')
+                st.download_button(
+                    label="📂 Download Excel File",
+                    data=file_data,
+                    file_name="house_helps.csv",
+                    mime="text/csv"
+                )
+            except Exception as e:
+                st.error(f"❌ Error while preparing the file for download: {str(e)}")
 
 # Main Streamlit Application
 def main():
@@ -190,3 +190,4 @@ def main():
 # Run the Streamlit App
 if __name__ == '__main__':
     main()
+
