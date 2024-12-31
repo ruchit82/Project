@@ -1,147 +1,125 @@
-# -*- coding: utf-8 -*-
-"""House Helper Management System"""
 import streamlit as st
 import pandas as pd
 import os
-from datetime import datetime
 
-# File Paths and User Credentials
+# Constants
 EXCEL_FILE = 'house_helps.xlsx'
-UPLOADS_DIR = 'uploads'
-USER_CREDENTIALS = {"admin": "admin1"}  # Simple dictionary for authentication
-
-# Ensure the uploads directory exists
-if not os.path.exists(UPLOADS_DIR):
-    os.makedirs(UPLOADS_DIR)
-
-# Create the Excel file if it doesn't exist
-if not os.path.exists(EXCEL_FILE):
-    df = pd.DataFrame(columns=[ 
-        'name', 'age', 'gender', 'address', 'contact', 
-        'experience', 'photo_path', 'rate', 'registration_date'
-    ])
-    df.to_excel(EXCEL_FILE, index=False)
+USER_CREDENTIALS = {'admin': 'password123'}  # Example admin credentials
 
 # Function: Register Helper
 def register_helper():
-    st.subheader("🔄 Register New Helper")
-
-    name = st.text_input("👤 Enter Name:", key="name")
-    age = st.number_input("📅 Enter Age:", min_value=18, max_value=100)
-    gender = st.selectbox("⚥ Select Gender:", ['Male', 'Female', 'Other'])
-    address = st.text_area("📍 Enter Address:")
-    contact = st.text_input("📞 Enter Contact Number:")
-    experience = st.number_input("💼 Enter Experience (in years):", min_value=0)
-    rate = st.number_input("💵 Enter Rate per day:", min_value=0.0)
-    photo = st.file_uploader("🖼️ Upload Photo", type=["jpg", "png", "jpeg"])
-
-    if st.button("✅ Register Helper", key="register_button"):
-        try:
-            # Load existing data
-            df = pd.read_excel(EXCEL_FILE)
-
-            # Check for duplicate phone number
-            if contact in df['contact'].values:
-                st.warning("⚠️ A helper with this contact number already exists!")
-                return
-
-            # Save photo if uploaded
-            if photo is not None:
-                photo_filename = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{photo.name}"
-                photo_path = os.path.join(UPLOADS_DIR, photo_filename)
-                with open(photo_path, "wb") as f:
-                    f.write(photo.getbuffer())
+    st.subheader("📝 Register Helper")
+    
+    # Icons for inputs
+    name = st.text_input("👤 Enter Helper's Name")
+    age = st.number_input("📅 Enter Helper's Age", min_value=18, max_value=100, step=1)
+    gender = st.selectbox("⚥ Select Gender", ["Male", "Female", "Other"])
+    contact = st.text_input("📞 Enter Helper's Contact Number")
+    rate = st.number_input("💵 Enter Hourly Rate", min_value=1, step=1)
+    address = st.text_input("📍 Enter Address")
+    experience = st.number_input("💼 Enter Years of Experience", min_value=1, step=1)
+    
+    if st.button("📥 Register Helper"):
+        if name and age and gender and contact and rate and address and experience:
+            if os.path.exists(EXCEL_FILE):
+                df = pd.read_excel(EXCEL_FILE)
             else:
-                photo_path = "No photo uploaded"
+                df = pd.DataFrame(columns=['name', 'age', 'gender', 'contact', 'rate', 'address', 'experience', 'registration_date'])
 
-            # Add new helper data
-            registration_date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-            new_data = {
-                'name': name, 'age': age, 'gender': gender, 'address': address,
-                'contact': contact, 'experience': experience, 'rate': rate,
-                'photo_path': photo_path, 'registration_date': registration_date
+            new_helper = {
+                'name': name,
+                'age': age,
+                'gender': gender,
+                'contact': contact,
+                'rate': rate,
+                'address': address,
+                'experience': experience,
+                'registration_date': pd.to_datetime('today').strftime('%Y-%m-%d')
             }
-
-            df = pd.concat([df, pd.DataFrame([new_data])], ignore_index=True)
+            df = df.append(new_helper, ignore_index=True)
             df.to_excel(EXCEL_FILE, index=False)
-
-            st.success("✅ Registration successful!")
-        except Exception as e:
-            st.error(f"❌ Error during registration: {str(e)}")
+            st.success(f"✅ {name} has been successfully registered as a helper!")
+        else:
+            st.warning("⚠️ Please fill in all the fields.")
 
 # Function: Search Helper
 def search_helper():
     st.subheader("🔍 Search Helper")
-
-    search_term = st.text_input("🔎 Enter Name or Contact Number to Search:")
-
-    if st.button("✅ Search Helper"):
-        try:
-            # Load the data
+    
+    contact_to_search = st.text_input("📞 Enter Helper's Contact Number")
+    
+    if st.button("🔍 Search Helper"):
+        if os.path.exists(EXCEL_FILE):
             df = pd.read_excel(EXCEL_FILE)
-
-            # Search for helpers matching the search term
-            search_results = df[df['contact'].str.contains(search_term, case=False) | df['name'].str.contains(search_term, case=False)]
-
-            if search_results.empty:
-                st.warning("⚠️ No helper found with that name or contact number.")
+            helper = df[df['contact'] == contact_to_search]
+            if not helper.empty:
+                st.write(helper[['name', 'age', 'gender', 'contact', 'rate', 'address', 'experience', 'registration_date']])
             else:
-                st.dataframe(search_results[['name', 'age', 'gender', 'rate', 'contact', 'registration_date']])
-        except Exception as e:
-            st.error(f"❌ Error during search: {str(e)}")
+                st.warning("⚠️ No helper found with this contact number.")
+        else:
+            st.error("❌ No data found. Please register helpers first.")
 
 # Function: Admin Use (Overview, Deletion, and Download)
 def admin_use():
     st.subheader("👨‍💻 Admin Panel")
 
-    username = st.text_input("👤 Username")
-    password = st.text_input("🔒 Password", type="password")
+    # Check if the user is logged in
+    if 'logged_in' not in st.session_state or not st.session_state['logged_in']:
+        username = st.text_input("👤 Username")
+        password = st.text_input("🔒 Password", type="password")
 
-    if st.button("✅ Login", key="login_button"):
-        # Debug message to display entered username and password
-        st.write(f"Entered username: {username}, Entered password: {password}")
+        if st.button("✅ Login", key="login_button"):
+            if username in USER_CREDENTIALS and USER_CREDENTIALS[username] == password:
+                st.session_state['logged_in'] = True
+                st.session_state['username'] = username
+                st.success("✅ Login successful!")
+            else:
+                st.error("❌ Invalid username or password.")
+    else:
+        st.write(f"👋 Welcome, {st.session_state['username']}!")
         
-        # Compare entered credentials with predefined credentials
-        if username in USER_CREDENTIALS and USER_CREDENTIALS[username] == password:
-            st.success("✅ Login successful!")
+        # Show options once logged in
+        menu = st.selectbox(
+            "Choose an Admin Action:",
+            ["Overview of Helpers", "Delete Helper", "Download Excel File"]
+        )
 
-            # Load the data
-            df = pd.read_excel(EXCEL_FILE)
+        # Load the data
+        df = pd.read_excel(EXCEL_FILE)
 
-            menu = st.selectbox(
-                "Choose an Admin Action:",
-                ["Overview of Helpers", "Delete Helper", "Download Excel File"]
-            )
+        # Overview of Helpers
+        if menu == "Overview of Helpers":
+            st.dataframe(df[['name', 'age', 'gender', 'rate', 'address', 'experience', 'registration_date']])
 
-            # Overview of Helpers
-            if menu == "Overview of Helpers":
-                st.dataframe(df[['name', 'age', 'gender', 'rate', 'registration_date']])
+        # Delete Helper
+        elif menu == "Delete Helper":
+            contact_to_delete = st.text_input("📞 Enter the contact number of the helper to delete:")
+            if st.button("🗑️ Delete Helper"):
+                if contact_to_delete in df['contact'].values:
+                    df = df[df['contact'] != contact_to_delete]
+                    df.to_excel(EXCEL_FILE, index=False)
+                    st.success("✅ Helper deleted successfully!")
+                else:
+                    st.warning("⚠️ Helper not found with this contact number.")
 
-            # Delete Helper
-            elif menu == "Delete Helper":
-                contact_to_delete = st.text_input("Enter the contact number of the helper to delete:")
-                if st.button("Delete Helper"):
-                    if contact_to_delete in df['contact'].values:
-                        df = df[df['contact'] != contact_to_delete]
-                        df.to_excel(EXCEL_FILE, index=False)
-                        st.success("✅ Helper deleted successfully!")
-                    else:
-                        st.warning("⚠️ Helper not found with this contact number.")
+        # Download Excel File
+        elif menu == "Download Excel File":
+            try:
+                file_data = df.to_csv(index=False).encode('utf-8')
+                st.download_button(
+                    label="📂 Download Excel File",
+                    data=file_data,
+                    file_name="house_helps.csv",
+                    mime="text/csv"
+                )
+            except Exception as e:
+                st.error(f"❌ Error while preparing the file for download: {str(e)}")
 
-            # Download Excel File
-            elif menu == "Download Excel File":
-                try:
-                    file_data = df.to_csv(index=False).encode('utf-8')
-                    st.download_button(
-                        label="📂 Download Excel File",
-                        data=file_data,
-                        file_name="house_helps.csv",
-                        mime="text/csv"
-                    )
-                except Exception as e:
-                    st.error(f"❌ Error while preparing the file for download: {str(e)}")
-        else:
-            st.error(f"❌ Invalid username or password. You entered username: {username} and password: {password}")
+        # Log out option
+        if st.button("🚪 Log out"):
+            st.session_state['logged_in'] = False
+            st.session_state['username'] = None
+            st.success("👋 You have logged out.")
 
 # Main Streamlit Application
 def main():
@@ -170,6 +148,15 @@ def main():
     .stTextArea textarea:focus { border: 2px solid #007bff;}
     .stButton > button { background-color: #28a745;}
     .stButton > button:hover { background-color: #218838;}
+    .stTextInput { padding: 10px; }
+    .stNumberInput { padding: 10px; }
+    .stSelectbox { padding: 10px; }
+    .stTextArea { padding: 10px; }
+    .stButton { margin-top: 10px;}
+    .stFileUploader { background-color: #e9ecef; padding: 15px; border-radius: 8px; }
+    .stSelectbox { background-color: #f7f8fa;}
+    .stButton > button { font-size: 18px; border-radius: 12px;}
+    .stFileUploader:hover { background-color: #d6d8db;}
     </style>""", unsafe_allow_html=True)
 
     st.title("🏠 House Helper Management System")
