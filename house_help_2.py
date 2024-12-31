@@ -32,7 +32,7 @@ def register_helper():
     address = st.text_area("📍 Enter Address:")
     contact = st.text_input("📞 Enter Contact Number:")
     experience = st.number_input("💼 Enter Experience (in years):", min_value=0)
-    rate = st.number_input("💵 Enter Rate per Hour:", min_value=0.0)
+    rate = st.number_input("💵 Enter Rate per day:", min_value=0.0)
     photo = st.file_uploader("🖼️ Upload Photo", type=["jpg", "png", "jpeg"])
 
     if st.button("✅ Register Helper", key="register_button"):
