@@ -16,8 +16,8 @@ if not os.path.exists(UPLOADS_DIR):
 
 # Create the Excel file if it doesn't exist
 if not os.path.exists(EXCEL_FILE):
-    df = pd.DataFrame(columns=[
-        'name', 'age', 'gender', 'address', 'contact',
+    df = pd.DataFrame(columns=[ 
+        'name', 'age', 'gender', 'address', 'contact', 
         'experience', 'photo_path', 'rate', 'registration_date'
     ])
     df.to_excel(EXCEL_FILE, index=False)
@@ -69,26 +69,9 @@ def register_helper():
         except Exception as e:
             st.error(f"❌ Error during registration: {str(e)}")
 
-# Function: Search Helpers by Rate
-def search_helpers():
-    st.subheader("🔍 Search Helpers by Rate")
-
-    max_price = st.number_input("💵 Enter Max Rate to Filter Helpers:", min_value=0.0)
-    if st.button("🔎 Search", key="search_button"):
-        try:
-            df = pd.read_excel(EXCEL_FILE)
-            filtered_df = df[df['rate'] <= max_price]
-
-            if filtered_df.empty:
-                st.warning("⚠️ No helpers found with the given criteria.")
-            else:
-                st.dataframe(filtered_df[['name', 'age', 'gender', 'rate']])
-        except Exception as e:
-            st.error(f"❌ Error during search: {str(e)}")
-
-# Function: Download Excel File
-def download_excel():
-    st.subheader("📥 Download Excel File")
+# Function: Admin Use (Overview, Deletion, and Download)
+def admin_use():
+    st.subheader("👨‍💻 Admin Panel")
 
     username = st.text_input("👤 Username")
     password = st.text_input("🔒 Password", type="password")
@@ -101,9 +84,32 @@ def download_excel():
         if username in USER_CREDENTIALS and USER_CREDENTIALS[username] == password:
             st.success("✅ Login successful!")
 
-            if os.path.exists(EXCEL_FILE):
+            # Load the data
+            df = pd.read_excel(EXCEL_FILE)
+
+            menu = st.selectbox(
+                "Choose an Admin Action:",
+                ["Overview of Helpers", "Delete Helper", "Download Excel File"]
+            )
+
+            # Overview of Helpers
+            if menu == "Overview of Helpers":
+                st.dataframe(df[['name', 'age', 'gender', 'rate', 'registration_date']])
+
+            # Delete Helper
+            elif menu == "Delete Helper":
+                contact_to_delete = st.text_input("Enter the contact number of the helper to delete:")
+                if st.button("Delete Helper"):
+                    if contact_to_delete in df['contact'].values:
+                        df = df[df['contact'] != contact_to_delete]
+                        df.to_excel(EXCEL_FILE, index=False)
+                        st.success("✅ Helper deleted successfully!")
+                    else:
+                        st.warning("⚠️ Helper not found with this contact number.")
+
+            # Download Excel File
+            elif menu == "Download Excel File":
                 try:
-                    df = pd.read_excel(EXCEL_FILE)
                     file_data = df.to_csv(index=False).encode('utf-8')
                     st.download_button(
                         label="📂 Download Excel File",
@@ -113,8 +119,6 @@ def download_excel():
                     )
                 except Exception as e:
                     st.error(f"❌ Error while preparing the file for download: {str(e)}")
-            else:
-                st.error("❌ Excel file not found. Please ensure it exists.")
         else:
             st.error(f"❌ Invalid username or password. You entered username: {username} and password: {password}")
 
@@ -128,8 +132,7 @@ def main():
     )
 
     # Custom CSS Styling
-    st.markdown("""
-    <style>
+    st.markdown("""<style>
     .main { background-color: #f8f9fa; }
     .css-18e3th9 { background-color: #ffffff; }
     .css-1d391kg { color: #007bff; font-size: 24px; font-weight: bold; }
@@ -146,23 +149,20 @@ def main():
     .stTextArea textarea:focus { border: 2px solid #007bff;}
     .stButton > button { background-color: #28a745;}
     .stButton > button:hover { background-color: #218838;}
-    </style>
-    """, unsafe_allow_html=True)
+    </style>""", unsafe_allow_html=True)
 
     st.title("🏠 House Helper Management System")
     st.sidebar.header("📋 Navigation")
 
     menu = st.sidebar.radio(
         "Choose an Option:",
-        ["Register Helper", "Search Helpers", "Download Excel File"]
+        ["Register Helper", "Admin Use"]
     )
 
     if menu == "Register Helper":
         register_helper()
-    elif menu == "Search Helpers":
-        search_helpers()
-    elif menu == "Download Excel File":
-        download_excel()
+    elif menu == "Admin Use":
+        admin_use()
 
 # Run the Streamlit App
 if __name__ == '__main__':
