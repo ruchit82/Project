@@ -8,7 +8,7 @@ from datetime import datetime
 # File Paths and User Credentials
 EXCEL_FILE = 'house_helps.xlsx'
 UPLOADS_DIR = 'uploads'
-USER_CREDENTIALS = {"admin": "password123"}  # Simple dictionary for authentication
+USER_CREDENTIALS = {"admin": "admin1"}  # Simple dictionary for authentication
 
 # Ensure the uploads directory exists
 if not os.path.exists(UPLOADS_DIR):
