@@ -24,18 +24,18 @@ if not os.path.exists(EXCEL_FILE):
 
 # Function: Register Helper
 def register_helper():
-    st.subheader("📝 Register New Helper")
+    st.subheader("🔄 Register New Helper")
 
-    name = st.text_input("Enter Name:")
-    age = st.number_input("Enter Age:", min_value=18, max_value=100)
-    gender = st.selectbox("Select Gender:", ['Male', 'Female', 'Other'])
-    address = st.text_area("Enter Address:")
-    contact = st.text_input("Enter Contact Number:")
-    experience = st.number_input("Enter Experience (in years):", min_value=0)
-    rate = st.number_input("Enter Rate per Hour:", min_value=0.0)
-    photo = st.file_uploader("Upload Photo", type=["jpg", "png", "jpeg"])
+    name = st.text_input("👤 Enter Name:", key="name")
+    age = st.number_input("📅 Enter Age:", min_value=18, max_value=100)
+    gender = st.selectbox("⚥ Select Gender:", ['Male', 'Female', 'Other'])
+    address = st.text_area("📍 Enter Address:")
+    contact = st.text_input("📞 Enter Contact Number:")
+    experience = st.number_input("💼 Enter Experience (in years):", min_value=0)
+    rate = st.number_input("💵 Enter Rate per Hour:", min_value=0.0)
+    photo = st.file_uploader("🖼️ Upload Photo", type=["jpg", "png", "jpeg"])
 
-    if st.button("Register Helper", key="register_button"):
+    if st.button("✅ Register Helper", key="register_button"):
         try:
             # Load existing data
             df = pd.read_excel(EXCEL_FILE)
@@ -73,8 +73,8 @@ def register_helper():
 def search_helpers():
     st.subheader("🔍 Search Helpers by Rate")
 
-    max_price = st.number_input("Enter Max Rate to Filter Helpers:", min_value=0.0)
-    if st.button("Search", key="search_button"):
+    max_price = st.number_input("💵 Enter Max Rate to Filter Helpers:", min_value=0.0)
+    if st.button("🔎 Search", key="search_button"):
         try:
             df = pd.read_excel(EXCEL_FILE)
             filtered_df = df[df['rate'] <= max_price]
@@ -93,7 +93,7 @@ def download_excel():
     username = st.text_input("👤 Username")
     password = st.text_input("🔒 Password", type="password")
 
-    if st.button("Login", key="login_button"):
+    if st.button("✅ Login", key="login_button"):
         if username in USER_CREDENTIALS and USER_CREDENTIALS[username] == password:
             st.success("✅ Login successful!")
 
@@ -131,9 +131,17 @@ def main():
     .css-1d391kg { color: #007bff; font-size: 24px; font-weight: bold; }
     .stButton > button { background-color: #007bff; color: white; border-radius: 8px; padding: 12px 24px; font-size: 16px;}
     .stButton > button:hover { background-color: #0056b3;}
-    .stTextInput input { background-color: #f1f1f1;}
-    .stTextArea textarea { background-color: #f1f1f1;}
-    .stSelectbox select { background-color: #f1f1f1;}
+    .stTextInput input { background-color: #f1f1f1; border: 1px solid #007bff; border-radius: 8px;}
+    .stTextArea textarea { background-color: #f1f1f1; border: 1px solid #007bff; border-radius: 8px;}
+    .stSelectbox select { background-color: #f1f1f1; border: 1px solid #007bff; border-radius: 8px;}
+    .stNumberInput input { background-color: #f1f1f1; border: 1px solid #007bff; border-radius: 8px;}
+    .stFileUploader { background-color: #f1f1f1; border: 1px solid #007bff; border-radius: 8px;}
+    .stFileUploader:hover { background-color: #e2e6ea;}
+    .stTextInput input:focus { border: 2px solid #007bff;}
+    .stSelectbox select:focus { border: 2px solid #007bff;}
+    .stTextArea textarea:focus { border: 2px solid #007bff;}
+    .stButton > button { background-color: #28a745;}
+    .stButton > button:hover { background-color: #218838;}
     </style>
     """, unsafe_allow_html=True)
 
