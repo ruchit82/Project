@@ -69,6 +69,27 @@ def register_helper():
         except Exception as e:
             st.error(f"❌ Error during registration: {str(e)}")
 
+# Function: Search Helper
+def search_helper():
+    st.subheader("🔍 Search Helper")
+
+    search_term = st.text_input("🔎 Enter Name or Contact Number to Search:")
+
+    if st.button("✅ Search Helper"):
+        try:
+            # Load the data
+            df = pd.read_excel(EXCEL_FILE)
+
+            # Search for helpers matching the search term
+            search_results = df[df['contact'].str.contains(search_term, case=False) | df['name'].str.contains(search_term, case=False)]
+
+            if search_results.empty:
+                st.warning("⚠️ No helper found with that name or contact number.")
+            else:
+                st.dataframe(search_results[['name', 'age', 'gender', 'rate', 'contact', 'registration_date']])
+        except Exception as e:
+            st.error(f"❌ Error during search: {str(e)}")
+
 # Function: Admin Use (Overview, Deletion, and Download)
 def admin_use():
     st.subheader("👨‍💻 Admin Panel")
@@ -156,11 +177,13 @@ def main():
 
     menu = st.sidebar.radio(
         "Choose an Option:",
-        ["Register Helper", "Admin Use"]
+        ["Register Helper", "Search Helper", "Admin Use"]
     )
 
     if menu == "Register Helper":
         register_helper()
+    elif menu == "Search Helper":
+        search_helper()
     elif menu == "Admin Use":
         admin_use()
 
