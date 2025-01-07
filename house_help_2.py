@@ -154,43 +154,43 @@ def admin_use():
 def main():
 
     # Updated CSS Styling
-st.markdown("""<style>
-    .main { background-color: #f8f9fa; }
-    .css-18e3th9 { background-color: #ffffff; }
-    .css-1d391kg { color: #007bff; font-size: 24px; font-weight: bold; }
-    .stButton > button { background-color: #007bff; color: white; border-radius: 8px; padding: 12px 24px; font-size: 16px;}
-    .stButton > button:hover { background-color: #0056b3;}
-    .stTextInput input, .stTextArea textarea, .stNumberInput input, .stSelectbox select {
-        background-color: #f1f1f1; 
-        border: 1px solid #007bff; 
-        border-radius: 8px; 
-        color: black; /* Ensure the text color is visible */
-    }
-    .stTextInput input:focus, .stTextArea textarea:focus, .stSelectbox select:focus {
-        border: 2px solid #007bff;
-    }
-    .stFileUploader { background-color: #f1f1f1; border: 1px solid #007bff; border-radius: 8px;}
-    .stFileUploader:hover { background-color: #e2e6ea;}
-    .stButton > button { background-color: #28a745;}
-    .stButton > button:hover { background-color: #218838;}
-</style>""", unsafe_allow_html=True)
+    st.markdown("""<style>
+       .main { background-color: #f8f9fa; }
+       .css-18e3th9 { background-color: #ffffff; }
+       .css-1d391kg { color: #007bff; font-size: 24px; font-weight: bold; }
+       .stButton > button { background-color: #007bff; color: white; border-radius: 8px; padding: 12px 24px; font-size: 16px;}
+       .stButton > button:hover { background-color: #0056b3;}
+       .stTextInput input, .stTextArea textarea, .stNumberInput input, .stSelectbox select {
+           background-color: #f1f1f1; 
+           border: 1px solid #007bff; 
+           border-radius: 8px; 
+           color: black; /* Ensure the text color is visible */
+       }
+       .stTextInput input:focus, .stTextArea textarea:focus, .stSelectbox select:focus {
+           border: 2px solid #007bff;
+       }
+       .stFileUploader { background-color: #f1f1f1; border: 1px solid #007bff; border-radius: 8px;}
+       .stFileUploader:hover { background-color: #e2e6ea;}
+       .stButton > button { background-color: #28a745;}
+       .stButton > button:hover { background-color: #218838;}
+   </style>""", unsafe_allow_html=True)
 
-st.title("🏠 Helping Hand")
-st.sidebar.header("📋 Navigation")
+   st.title("🏠 Helping Hand")
+   st.sidebar.header("📋 Navigation")
 
-menu = st.sidebar.radio(
-    "Choose an Option:",
-    ["Register Helper", "Search Helper", "Admin Use"]
-)
+   menu = st.sidebar.radio(
+       "Choose an Option:",
+       ["Register Helper", "Search Helper", "Admin Use"]
+   )
 
-if menu == "Register Helper":
-    register_helper()
-elif menu == "Search Helper":
-    search_helper()
-elif menu == "Admin Use":
-    admin_use()
+   if menu == "Register Helper":
+       register_helper()
+   elif menu == "Search Helper":
+       search_helper()
+   elif menu == "Admin Use":
+       admin_use()
 
 # Run the Streamlit App
-if __name__ == '__main__':
-    main()
+   if __name__ == '__main__':
+       main()
 
