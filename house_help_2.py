@@ -191,6 +191,6 @@ def main():
        admin_use()
 
 # Run the Streamlit App
-   if __name__ == '__main__':
-       main()
+if __name__ == '__main__':
+        main()
 
