@@ -173,7 +173,7 @@ def main():
     .stButton > button:hover { background-color: #218838;}
     </style>""", unsafe_allow_html=True)
 
-    st.title("🏠 House Helper Management System")
+    st.title("🏠 Helping Hand")
     st.sidebar.header("📋 Navigation")
 
     menu = st.sidebar.radio(
