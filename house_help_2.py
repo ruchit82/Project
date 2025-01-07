@@ -175,22 +175,21 @@ st.markdown("""<style>
     .stButton > button:hover { background-color: #218838;}
 </style>""", unsafe_allow_html=True)
 
+st.title("🏠 Helping Hand")
+st.sidebar.header("📋 Navigation")
 
-    st.title("🏠 Helping Hand")
-    st.sidebar.header("📋 Navigation")
+menu = st.sidebar.radio(
+    "Choose an Option:",
+    ["Register Helper", "Search Helper", "Admin Use"]
+)
 
-    menu = st.sidebar.radio(
-        "Choose an Option:",
-        ["Register Helper", "Search Helper", "Admin Use"]
-    )
-
-    if menu == "Register Helper":
-        register_helper()
-    elif menu == "Search Helper":
-        search_helper()
-    elif menu == "Admin Use":
-        admin_use()
+if menu == "Register Helper":
+    register_helper()
+elif menu == "Search Helper":
+    search_helper()
+elif menu == "Admin Use":
+    admin_use()
 
 # Run the Streamlit App
-if __name__ == '__main__':
-    main()
+if __name__ ==
+
