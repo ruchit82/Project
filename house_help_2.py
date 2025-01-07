@@ -3,12 +3,14 @@ import pandas as pd
 import os
 from datetime import datetime
 
+# Set page configuration
 st.set_page_config(
-        page_title="House Helper Management System",
-        page_icon="🏠",
-        layout="wide",
-        initial_sidebar_state="expanded"
-    )
+    page_title="House Helper Management System",
+    page_icon="🏠",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
 # File Paths and User Credentials
 EXCEL_FILE = 'house_helps.xlsx'
 UPLOADS_DIR = 'uploads'
@@ -20,8 +22,8 @@ if not os.path.exists(UPLOADS_DIR):
 
 # Create the Excel file if it doesn't exist
 if not os.path.exists(EXCEL_FILE):
-    df = pd.DataFrame(columns=[ 
-        'name', 'age', 'gender', 'address', 'contact', 
+    df = pd.DataFrame(columns=[
+        'name', 'age', 'gender', 'address', 'contact',
         'experience', 'photo_path', 'rate', 'registration_date'
     ])
     df.to_excel(EXCEL_FILE, index=False)
@@ -78,7 +80,7 @@ def search_helper():
     st.subheader("🔍 Search Helper")
 
     # Input for rate per day
-    rate_search = st.number_input("💵 Enter Rate per Day to Search:", min_value=0.0, step=0.1)
+    rate_search = st.number_input("💵 Enter Rate per Day to Search:", min_value=0, step=1)
 
     if st.button("✅ Search Helper"):
         try:
@@ -152,45 +154,43 @@ def admin_use():
 
 # Main Streamlit Application
 def main():
-
     # Updated CSS Styling
     st.markdown("""<style>
-       .main { background-color: #f8f9fa; }
-       .css-18e3th9 { background-color: #ffffff; }
-       .css-1d391kg { color: #007bff; font-size: 24px; font-weight: bold; }
-       .stButton > button { background-color: #007bff; color: white; border-radius: 8px; padding: 12px 24px; font-size: 16px;}
-       .stButton > button:hover { background-color: #0056b3;}
-       .stTextInput input, .stTextArea textarea, .stNumberInput input, .stSelectbox select {
-           background-color: #f1f1f1; 
-           border: 1px solid #007bff; 
-           border-radius: 8px; 
-           color: black; /* Ensure the text color is visible */
-       }
-       .stTextInput input:focus, .stTextArea textarea:focus, .stSelectbox select:focus {
-           border: 2px solid #007bff;
-       }
-       .stFileUploader { background-color: #f1f1f1; border: 1px solid #007bff; border-radius: 8px;}
-       .stFileUploader:hover { background-color: #e2e6ea;}
-       .stButton > button { background-color: #28a745;}
-       .stButton > button:hover { background-color: #218838;}
-   </style>""", unsafe_allow_html=True)
+        .main { background-color: #f8f9fa; }
+        .css-18e3th9 { background-color: #ffffff; }
+        .css-1d391kg { color: #007bff; font-size: 24px; font-weight: bold; }
+        .stButton > button { background-color: #007bff; color: white; border-radius: 8px; padding: 12px 24px; font-size: 16px;}
+        .stButton > button:hover { background-color: #0056b3;}
+        .stTextInput input, .stTextArea textarea, .stNumberInput input, .stSelectbox select {
+            background-color: #f1f1f1; 
+            border: 1px solid #007bff; 
+            border-radius: 8px; 
+            color: black;
+        }
+        .stTextInput input:focus, .stTextArea textarea:focus, .stSelectbox select:focus {
+            border: 2px solid #007bff;
+        }
+        .stFileUploader { background-color: #f1f1f1; border: 1px solid #007bff; border-radius: 8px;}
+        .stFileUploader:hover { background-color: #e2e6ea;}
+        .stButton > button { background-color: #28a745;}
+        .stButton > button:hover { background-color: #218838;}
+    </style>""", unsafe_allow_html=True)
 
-   st.title("🏠 Helping Hand")
-   st.sidebar.header("📋 Navigation")
+    st.title("🏠 Helping Hand")
+    st.sidebar.header("📋 Navigation")
 
-   menu = st.sidebar.radio(
-       "Choose an Option:",
-       ["Register Helper", "Search Helper", "Admin Use"]
-   )
+    menu = st.sidebar.radio(
+        "Choose an Option:",
+        ["Register Helper", "Search Helper", "Admin Use"]
+    )
 
-   if menu == "Register Helper":
-       register_helper()
-   elif menu == "Search Helper":
-       search_helper()
-   elif menu == "Admin Use":
-       admin_use()
+    if menu == "Register Helper":
+        register_helper()
+    elif menu == "Search Helper":
+        search_helper()
+    elif menu == "Admin Use":
+        admin_use()
 
 # Run the Streamlit App
 if __name__ == '__main__':
-        main()
-
+    main()
