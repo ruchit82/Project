@@ -153,25 +153,28 @@ def main():
         initial_sidebar_state="expanded"
     )
 
-    # Custom CSS Styling
-    st.markdown("""<style>
+    # Updated CSS Styling
+st.markdown("""<style>
     .main { background-color: #f8f9fa; }
     .css-18e3th9 { background-color: #ffffff; }
     .css-1d391kg { color: #007bff; font-size: 24px; font-weight: bold; }
     .stButton > button { background-color: #007bff; color: white; border-radius: 8px; padding: 12px 24px; font-size: 16px;}
     .stButton > button:hover { background-color: #0056b3;}
-    .stTextInput input { background-color: #f1f1f1; border: 1px solid #007bff; border-radius: 8px;}
-    .stTextArea textarea { background-color: #f1f1f1; border: 1px solid #007bff; border-radius: 8px;}
-    .stSelectbox select { background-color: #f1f1f1; border: 1px solid #007bff; border-radius: 8px;}
-    .stNumberInput input { background-color: #f1f1f1; border: 1px solid #007bff; border-radius: 8px;}
+    .stTextInput input, .stTextArea textarea, .stNumberInput input, .stSelectbox select {
+        background-color: #f1f1f1; 
+        border: 1px solid #007bff; 
+        border-radius: 8px; 
+        color: black; /* Ensure the text color is visible */
+    }
+    .stTextInput input:focus, .stTextArea textarea:focus, .stSelectbox select:focus {
+        border: 2px solid #007bff;
+    }
     .stFileUploader { background-color: #f1f1f1; border: 1px solid #007bff; border-radius: 8px;}
     .stFileUploader:hover { background-color: #e2e6ea;}
-    .stTextInput input:focus { border: 2px solid #007bff;}
-    .stSelectbox select:focus { border: 2px solid #007bff;}
-    .stTextArea textarea:focus { border: 2px solid #007bff;}
     .stButton > button { background-color: #28a745;}
     .stButton > button:hover { background-color: #218838;}
-    </style>""", unsafe_allow_html=True)
+</style>""", unsafe_allow_html=True)
+
 
     st.title("🏠 Helping Hand")
     st.sidebar.header("📋 Navigation")
