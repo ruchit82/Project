@@ -3,6 +3,12 @@ import pandas as pd
 import os
 from datetime import datetime
 
+st.set_page_config(
+        page_title="House Helper Management System",
+        page_icon="🏠",
+        layout="wide",
+        initial_sidebar_state="expanded"
+    )
 # File Paths and User Credentials
 EXCEL_FILE = 'house_helps.xlsx'
 UPLOADS_DIR = 'uploads'
@@ -146,12 +152,6 @@ def admin_use():
 
 # Main Streamlit Application
 def main():
-    st.set_page_config(
-        page_title="House Helper Management System",
-        page_icon="🏠",
-        layout="wide",
-        initial_sidebar_state="expanded"
-    )
 
     # Updated CSS Styling
 st.markdown("""<style>
