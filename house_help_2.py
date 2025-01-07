@@ -191,5 +191,5 @@ elif menu == "Admin Use":
     admin_use()
 
 # Run the Streamlit App
-if __name__ ==
+if __name__==
 
