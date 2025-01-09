@@ -7,11 +7,13 @@ Original file is located at
     https://colab.research.google.com/drive/1R9miFoGSV0UfdnL0CEQEgBBunBn4X8ov
 """
 
+
 import re
 import pandas as pd
 from PyPDF2 import PdfReader
 import os
 import streamlit as st
+from io import BytesIO
 
 # Function to extract image codes from a PDF
 def extract_codes_from_pdf(pdf_file):
@@ -37,20 +39,31 @@ def append_to_excel(data, file_name="Extracted_Data.xlsx"):
     # Save the updated data back to the file
     combined_data.to_excel(file_name, index=False)
 
+# Function to download Excel content
+def create_download_link(dataframe):
+    output = BytesIO()
+    dataframe.to_excel(output, index=False, engine='openpyxl')
+    processed_data = output.getvalue()
+    return processed_data
+
 # Streamlit app
 def main():
-    st.title("PDF Data Extractor and Appender")
-    st.write("Upload multiple PDF files to extract codes and append data to an Excel sheet.")
+    st.title("📄 PDF Data Extractor and Excel Manager")
+    st.write("Easily extract codes from PDF files and manage them in an Excel sheet.")
 
     # File uploader for multiple PDFs
-    uploaded_files = st.file_uploader("Upload PDF files", type="pdf", accept_multiple_files=True)
+    st.header("1️⃣ Upload Your PDF Files")
+    uploaded_files = st.file_uploader(
+        "Upload one or more PDF files", 
+        type="pdf", 
+        accept_multiple_files=True
+    )
 
     if uploaded_files:
         all_data = []  # Store all extracted data
 
         for uploaded_file in uploaded_files:
-            # Process each uploaded file
-            st.write(f"Processing: {uploaded_file.name}")
+            st.write(f"📂 Processing: {uploaded_file.name}")
             codes = extract_codes_from_pdf(uploaded_file)
             if codes:
                 # Extract party name from PDF file name (without extension)
@@ -58,21 +71,43 @@ def main():
                 # Append (Party Name, Code) pairs
                 all_data.extend([(party_name, code) for code in codes])
             else:
-                st.warning(f"No valid codes found in {uploaded_file.name}")
+                st.warning(f"⚠️ No valid codes found in {uploaded_file.name}")
 
         if all_data:
             # Create a DataFrame
             df = pd.DataFrame(all_data, columns=["Party Name", "Code"])
 
-            # Show extracted data in the app
-            st.write("Extracted Data:")
+            # Display the extracted data
+            st.success("✅ Extraction Complete!")
+            st.write("### Extracted Data:")
             st.dataframe(df)
 
-            # Save to Excel
+            # Append the data to the Excel sheet
             append_to_excel(df)
-            st.success("Data appended to Extracted_Data.xlsx successfully.")
+            st.success("📊 Data successfully appended to **Extracted_Data.xlsx**!")
+
+            # Create download link for the updated Excel sheet
+            if st.button("📥 Download Excel File"):
+                excel_data = pd.read_excel("Extracted_Data.xlsx")
+                processed_data = create_download_link(excel_data)
+                st.download_button(
+                    label="Click to Download Excel",
+                    data=processed_data,
+                    file_name="Extracted_Data.xlsx",
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                )
+
+            # View the Excel file
+            if st.button("👀 View Excel File"):
+                st.write("### Current Data in Excel:")
+                excel_data = pd.read_excel("Extracted_Data.xlsx")
+                st.dataframe(excel_data)
+
         else:
-            st.warning("No valid codes were found in the uploaded PDFs.")
+            st.warning("⚠️ No valid codes were found in the uploaded PDFs.")
+
+    else:
+        st.info("📥 Please upload one or more PDF files to get started.")
 
 # Run the app
 if __name__ == "__main__":
