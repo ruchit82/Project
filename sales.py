@@ -33,47 +33,73 @@ if uploaded_file:
 
         # Check for analysis type
         if analysis_type == "Monthly Sale":
-            # Monthly Sale Analysis Code
-            st.write("### Monthly Sale Analysis")
+           # Updated Monthly Sale Analysis Code
+if analysis_type == "Monthly Sale":
+    st.write("### Monthly Sale Analysis")
 
-            # Display first 10 rows
-            st.write("First 10 rows of the dataset:")
-            st.dataframe(data.head(10))
+    # Display first 10 rows
+    st.write("First 10 rows of the dataset:")
+    st.dataframe(data.head(10))
 
-            # Check for required columns
-            required_columns = ['DocDate', 'type', 'parName', 'CATEGORY', 'weight', 'noPcs']
-            if not all(col in data.columns for col in required_columns):
-                st.error(f"The dataset must contain these columns: {required_columns}")
-            else:
-                # Remove unwanted categories
-                excluded_categories = ['ST', 'LOOSE PCS', 'PARA BIDS', 'Langadi', 'PROCESS LOSS',
-                                       'SCRAP PCC', 'BALL CHAIN', 'SIGNING TAR', 'Fine']
-                df = data[~data['CATEGORY'].isin(excluded_categories)]
+    # Check for required columns
+    required_columns = ['DocDate', 'type', 'parName', 'CATEGORY', 'weight', 'noPcs']
+    if not all(col in data.columns for col in required_columns):
+        st.error(f"The dataset must contain these columns: {required_columns}")
+    else:
+        # Display unique categories before deletion
+        st.write("### Unique Categories Before Deletion")
+        st.write(data['CATEGORY'].unique())
 
-                # Party-wise weight summary
-                party_weight_summary = df.groupby('parName')['weight'].sum().reset_index()
-                party_weight_summary['Rank'] = party_weight_summary['weight'].rank(ascending=False, method='dense')
-                party_weight_summary = party_weight_summary.sort_values(by='weight', ascending=False)
+        # Filter data to remove unwanted categories
+        excluded_categories = ['ST', 'LOOSE PCS', 'PARA BIDS', 'Langadi', 'PROCESS LOSS',
+                               'SCRAP PCC', 'BALL CHAIN', 'SIGNING TAR', 'Fine']
+        df = data[~data['CATEGORY'].isin(excluded_categories)]
 
-                # Dropdown for party selection
-                st.write("### Check Party Rank")
-                party_name = st.selectbox("Select a party name:", options=party_weight_summary['parName'].unique())
+        # Display unique categories after deletion
+        st.write("### Unique Categories After Deletion")
+        st.write(df['CATEGORY'].unique())
 
-                if party_name:
-                    party_details = party_weight_summary[party_weight_summary['parName'] == party_name]
-                    st.write(f"**Rank:** {int(party_details['Rank'].values[0])}")
-                    st.write(f"**Party Name:** {party_name}")
-                    st.write(f"**Total Weight:** {party_details['weight'].values[0]:.2f}")
+        # Party weight summary
+        party_weight_summary = df.groupby('parName')['weight'].sum().reset_index()
+        top_10_parties = party_weight_summary.sort_values(by='weight', ascending=False).head(10)
+        bottom_5_parties = party_weight_summary.sort_values(by='weight', ascending=True).head(5)
 
-                # Plots
-                st.write("### Top 10 Parties by Weight")
-                st.bar_chart(party_weight_summary.set_index('parName')['weight'])
+        st.write("### Bottom 5 Parties by Weight")
+        st.dataframe(bottom_5_parties)
 
-                # Weight over time
-                df['DocDate'] = pd.to_datetime(df['DocDate'])
-                time_series = df.groupby('DocDate')['weight'].sum().reset_index()
-                st.write("### Total Weight Over Time")
-                st.line_chart(time_series.set_index('DocDate')['weight'])
+        st.write("### Top 10 Parties by Weight")
+        st.dataframe(top_10_parties)
+
+        # Category-wise summary
+        category_summary = df.groupby('CATEGORY').agg({
+            'weight': 'sum',
+            'noPcs': 'sum'
+        }).reset_index()
+
+        # Top 10 categories by weight
+        top_10_categories = category_summary.sort_values(by='weight', ascending=False).head(10)
+        st.write("### Top 10 Categories by Weight")
+        st.dataframe(top_10_categories)
+
+        # Bottom 5 categories by weight
+        bottom_5_categories = category_summary.sort_values(by='weight', ascending=True).head(5)
+        st.write("### Bottom 5 Categories by Weight")
+        st.dataframe(bottom_5_categories)
+
+        # Plots for visualization
+        st.write("### Visualizations")
+
+        # Party-wise weight plot
+        fig1, ax1 = plt.subplots(figsize=(8, 6))
+        sns.barplot(data=top_10_parties, x='weight', y='parName', palette='Blues_r')
+        ax1.set_title("Top 10 Parties by Weight")
+        st.pyplot(fig1)
+
+        # Category-wise weight plot
+        fig2, ax2 = plt.subplots(figsize=(8, 6))
+        sns.barplot(data=top_10_categories, x='weight', y='CATEGORY', palette='Greens_r')
+        ax2.set_title("Top 10 Categories by Weight")
+        st.pyplot(fig2)
 
         elif analysis_type == "Export Sale":
             # Export Sale Analysis Code
