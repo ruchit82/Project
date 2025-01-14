@@ -12,8 +12,6 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns 
 
-
-
 # Streamlit app title
 st.title("Data Analysis Application")
 
@@ -33,73 +31,47 @@ if uploaded_file:
 
         # Check for analysis type
         if analysis_type == "Monthly Sale":
-           # Updated Monthly Sale Analysis Code
-if analysis_type == "Monthly Sale":
-    st.write("### Monthly Sale Analysis")
+            # Monthly Sale Analysis Code
+            st.write("### Monthly Sale Analysis")
 
-    # Display first 10 rows
-    st.write("First 10 rows of the dataset:")
-    st.dataframe(data.head(10))
+            # Display first 10 rows
+            st.write("First 10 rows of the dataset:")
+            st.dataframe(data.head(10))
 
-    # Check for required columns
-    required_columns = ['DocDate', 'type', 'parName', 'CATEGORY', 'weight', 'noPcs']
-    if not all(col in data.columns for col in required_columns):
-        st.error(f"The dataset must contain these columns: {required_columns}")
-    else:
-        # Display unique categories before deletion
-        st.write("### Unique Categories Before Deletion")
-        st.write(data['CATEGORY'].unique())
+            # Check for required columns
+            required_columns = ['DocDate', 'type', 'parName', 'CATEGORY', 'weight', 'noPcs']
+            if not all(col in data.columns for col in required_columns):
+                st.error(f"The dataset must contain these columns: {required_columns}")
+            else:
+                # Remove unwanted categories
+                excluded_categories = ['ST', 'LOOSE PCS', 'PARA BIDS', 'Langadi', 'PROCESS LOSS',
+                                       'SCRAP PCC', 'BALL CHAIN', 'SIGNING TAR', 'Fine']
+                df = data[~data['CATEGORY'].isin(excluded_categories)]
 
-        # Filter data to remove unwanted categories
-        excluded_categories = ['ST', 'LOOSE PCS', 'PARA BIDS', 'Langadi', 'PROCESS LOSS',
-                               'SCRAP PCC', 'BALL CHAIN', 'SIGNING TAR', 'Fine']
-        df = data[~data['CATEGORY'].isin(excluded_categories)]
+                # Party-wise weight summary
+                party_weight_summary = df.groupby('parName')['weight'].sum().reset_index()
+                party_weight_summary['Rank'] = party_weight_summary['weight'].rank(ascending=False, method='dense')
+                party_weight_summary = party_weight_summary.sort_values(by='weight', ascending=False)
 
-        # Display unique categories after deletion
-        st.write("### Unique Categories After Deletion")
-        st.write(df['CATEGORY'].unique())
+                # Dropdown for party selection
+                st.write("### Check Party Rank")
+                party_name = st.selectbox("Select a party name:", options=party_weight_summary['parName'].unique())
 
-        # Party weight summary
-        party_weight_summary = df.groupby('parName')['weight'].sum().reset_index()
-        top_10_parties = party_weight_summary.sort_values(by='weight', ascending=False).head(10)
-        bottom_5_parties = party_weight_summary.sort_values(by='weight', ascending=True).head(5)
+                if party_name:
+                    party_details = party_weight_summary[party_weight_summary['parName'] == party_name]
+                    st.write(f"**Rank:** {int(party_details['Rank'].values[0])}")
+                    st.write(f"**Party Name:** {party_name}")
+                    st.write(f"**Total Weight:** {party_details['weight'].values[0]:.2f}")
 
-        st.write("### Bottom 5 Parties by Weight")
-        st.dataframe(bottom_5_parties)
+                # Plots
+                st.write("### Top 10 Parties by Weight")
+                st.bar_chart(party_weight_summary.set_index('parName')['weight'])
 
-        st.write("### Top 10 Parties by Weight")
-        st.dataframe(top_10_parties)
-
-        # Category-wise summary
-        category_summary = df.groupby('CATEGORY').agg({
-            'weight': 'sum',
-            'noPcs': 'sum'
-        }).reset_index()
-
-        # Top 10 categories by weight
-        top_10_categories = category_summary.sort_values(by='weight', ascending=False).head(10)
-        st.write("### Top 10 Categories by Weight")
-        st.dataframe(top_10_categories)
-
-        # Bottom 5 categories by weight
-        bottom_5_categories = category_summary.sort_values(by='weight', ascending=True).head(5)
-        st.write("### Bottom 5 Categories by Weight")
-        st.dataframe(bottom_5_categories)
-
-        # Plots for visualization
-        st.write("### Visualizations")
-
-        # Party-wise weight plot
-        fig1, ax1 = plt.subplots(figsize=(8, 6))
-        sns.barplot(data=top_10_parties, x='weight', y='parName', palette='Blues_r')
-        ax1.set_title("Top 10 Parties by Weight")
-        st.pyplot(fig1)
-
-        # Category-wise weight plot
-        fig2, ax2 = plt.subplots(figsize=(8, 6))
-        sns.barplot(data=top_10_categories, x='weight', y='CATEGORY', palette='Greens_r')
-        ax2.set_title("Top 10 Categories by Weight")
-        st.pyplot(fig2)
+                # Weight over time
+                df['DocDate'] = pd.to_datetime(df['DocDate'])
+                time_series = df.groupby('DocDate')['weight'].sum().reset_index()
+                st.write("### Total Weight Over Time")
+                st.line_chart(time_series.set_index('DocDate')['weight'])
 
         elif analysis_type == "Export Sale":
             # Export Sale Analysis Code
@@ -167,55 +139,7 @@ if analysis_type == "Monthly Sale":
                 ax3.set_title("Bottom 5 Parties by Weight")
                 st.pyplot(fig3)
 
-            # Type-Based Analysis
-            st.write("### Type-Based Analysis")
-            type_summary = data.groupby('TYPE').agg({'WEIGHT': 'sum', 'QTY': 'sum'}).reset_index()
-            fig4, ax4 = plt.subplots(figsize=(10, 6))
-            sns.barplot(x='WEIGHT', y='TYPE', data=type_summary, palette='viridis')
-            ax4.set_title("Weight by Type")
-            st.pyplot(fig4)
-
-            # Size Analysis
-            st.write("### Size-Based Analysis")
-            size_summary = data.groupby('SIZE').agg({'WEIGHT': 'sum'}).reset_index()
-            fig5, ax5 = plt.subplots(figsize=(10, 6))
-            sns.barplot(x='SIZE', y='WEIGHT', data=size_summary, palette='coolwarm')
-            ax5.set_title("Weight by Size")
-            st.pyplot(fig5)
-
-            # Design-Based Analysis
-            st.write("### Top 5 Designs by Weight")
-            design_summary = data.groupby('DESIGN NO')['WEIGHT'].sum().reset_index()
-            top_5_designs = design_summary.sort_values(by='WEIGHT', ascending=False).head(5)
-            fig6, ax6 = plt.subplots(figsize=(8, 6))
-            sns.barplot(x='WEIGHT', y='DESIGN NO', data=top_5_designs, palette='Greens_r')
-            ax6.set_title("Top 5 Designs by Weight")
-            st.pyplot(fig6)
-
-            # Correlation Analysis
-            st.write("### Correlation Analysis")
-            fig7, ax7 = plt.subplots(figsize=(8, 6))
-            sns.heatmap(data[['WEIGHT', 'QTY']].corr(), annot=True, cmap='coolwarm')
-            ax7.set_title("Correlation Matrix")
-            st.pyplot(fig7)
-
-            # Scatter Plot
-            st.write("### Weight vs Quantity Scatter Plot")
-            fig8, ax8 = plt.subplots(figsize=(8, 6))
-            sns.scatterplot(x='WEIGHT', y='QTY', data=data, hue='TYPE', palette='tab10')
-            ax8.set_title("Weight vs Quantity")
-            st.pyplot(fig8)
-
-            # Violin Plot
-            st.write("### Weight Distribution by Party")
-            fig9, ax9 = plt.subplots(figsize=(10, 6))
-            sns.violinplot(x='PARTY', y='WEIGHT', data=data, scale='width')
-            plt.xticks(rotation=45)
-            ax9.set_title("Weight Distribution by Party")
-            st.pyplot(fig9)
-
     except Exception as e:
         st.error(f"Error processing the file: {e}")
 else:
     st.info("Please upload an Excel file to start the analysis.")
-
