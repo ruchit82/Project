@@ -28,7 +28,7 @@ if uploaded_file:
             st.dataframe(data.head(10))
 
             # Check for required columns
-            required_columns = ['DocDate', 'type', 'parName', 'CATEGORY', 'weight', 'noPcs']
+            required_columns = ['DocDate', 'type', 'parName', 'CATEGORY','CatCd', 'weight', 'noPcs']
             if not all(col in data.columns for col in required_columns):
                 st.error(f"The dataset must contain these columns: {required_columns}")
             else:
