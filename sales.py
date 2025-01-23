@@ -72,7 +72,7 @@ if uploaded_file:
 
                     # Bar Plot: Top 10 Categories by Weight
                     st.write("### Top 10 Categories by Weight")
-                    top_10_category = category_summary.sort_values(by='weight', ascending=False).head(10)
+                    top_10_category = CatCd_summary.sort_values(by='weight', ascending=False).head(10)
                     fig4, ax4 = plt.subplots(figsize=(10, 6))
                     sns.barplot(x='weight', y='CatCd', data=top_10_category, colors=sns.color_palette('pastel'), ax=ax4)
                     ax4.set_title('Top 10 Categories by Weight')
@@ -80,9 +80,9 @@ if uploaded_file:
 
                     # Bar Plot: Bottom 5 Categories by Weight
                     st.write("### Bottom 5 Categories by Weight")
-                    bottom_5_category = category_summary.sort_values(by='weight').head(5)
+                    bottom_5_category = CatCd_summary.sort_values(by='weight').head(5)
                     fig5, ax5 = plt.subplots(figsize=(10, 6))
-                    sns.barplot(x='weight', y='CatCd', data=bottom_5_category, palette='Oranges_r', ax=ax5)
+                    sns.barplot(x='weight', y='Category', data=bottom_5_category, palette='Oranges_r', ax=ax5)
                     ax5.set_title('Bottom 5 Categories by Weight')
                     st.pyplot(fig5)
 
