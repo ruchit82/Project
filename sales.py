@@ -54,16 +54,16 @@ if uploaded_file:
                         st.write(f"**Total Weight:** {party_details['weight'].values[0]:.2f}")
 
                     # Pie Chart: Category-wise Weight Distribution (Top 15)
-                    st.write("### Category-wise Weight Distribution (Top 15)")
-                    category_summary = df.groupby('CatCd')['weight'].sum().reset_index()
-                    top_15_categories = CatCd_summary.sort_values(by='weight', ascending=False).head(15)
-                    positive_weights = top_15_categories['weight'].apply(lambda x: abs(x))
+                      st.write("### Category-wise Weight Distribution (Top 15)")
+                      category_summary = df.groupby('CatCd')['weight'].sum().reset_index()
+                      top_15_categories = category_summary.sort_values(by='weight', ascending=False).head(15)  # Fixed variable name
+                      positive_weights = top_15_categories['weight'].apply(lambda x: abs(x))
 
-                    fig1, ax1 = plt.subplots(figsize=(8, 8))
-                    ax1.pie(positive_weights, labels=top_15_categories['CatCd'],
-                            autopct='%1.1f%%', startangle=140, colors=sns.color_palette('pastel'))
-                    ax1.set_title('Category-wise Weight Distribution (Top 15)')
-                    st.pyplot(fig1)
+                      fig1, ax1 = plt.subplots(figsize=(8, 8))
+                      ax1.pie(positive_weights, labels=top_15_categories['CatCd'],
+                               autopct='%1.1f%%', startangle=140, colors=sns.color_palette('pastel'))
+                      ax1.set_title('Category-wise Weight Distribution (Top 15)')
+                      st.pyplot(fig1)
 
                     # Bar Plot: Top 10 Parties by Weight
                     st.write("### Top 10 Parties by Weight")
