@@ -55,12 +55,12 @@ if uploaded_file:
 
                     # Pie Chart: Category-wise Weight Distribution (Top 15)
                     st.write("### Category-wise Weight Distribution (Top 15)")
-                    category_summary = df.groupby('CATEGORY')['weight'].sum().reset_index()
-                    top_15_categories = category_summary.sort_values(by='weight', ascending=False).head(15)
+                    category_summary = df.groupby('CatCd')['weight'].sum().reset_index()
+                    top_15_categories = CatCd_summary.sort_values(by='weight', ascending=False).head(15)
                     positive_weights = top_15_categories['weight'].apply(lambda x: abs(x))
 
                     fig1, ax1 = plt.subplots(figsize=(8, 8))
-                    ax1.pie(positive_weights, labels=top_15_categories['CATEGORY'],
+                    ax1.pie(positive_weights, labels=top_15_categories['CatCd'],
                             autopct='%1.1f%%', startangle=140, colors=sns.color_palette('pastel'))
                     ax1.set_title('Category-wise Weight Distribution (Top 15)')
                     st.pyplot(fig1)
@@ -83,15 +83,15 @@ if uploaded_file:
 
                     # Bar Plot: Top 10 Categories by Weight
                     st.write("### Top 10 Categories by Weight")
-                    top_10_category = category_summary.sort_values(by='weight', ascending=False).head(10)
+                    top_10_category = CatCd_summary.sort_values(by='weight', ascending=False).head(10)
                     fig4, ax4 = plt.subplots(figsize=(10, 6))
-                    sns.barplot(x='weight', y='CATEGORY', data=top_10_category, palette='Greens_r', ax=ax4)
+                    sns.barplot(x='weight', y='CATEGORY', data=top_10_Category, palette='Greens_r', ax=ax4)
                     ax4.set_title('Top 10 Categories by Weight')
                     st.pyplot(fig4)
 
                     # Bar Plot: Bottom 5 Categories by Weight
                     st.write("### Bottom 5 Categories by Weight")
-                    bottom_5_category = category_summary.sort_values(by='weight').head(5)
+                    bottom_5_category = CatCd_summary.sort_values(by='weight').head(5)
                     fig5, ax5 = plt.subplots(figsize=(10, 6))
                     sns.barplot(x='weight', y='CATEGORY', data=bottom_5_category, palette='Oranges_r', ax=ax5)
                     ax5.set_title('Bottom 5 Categories by Weight')
