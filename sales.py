@@ -74,7 +74,7 @@ if uploaded_file:
                     st.write("### Top 10 Categories by Weight")
                     top_10_category = category_summary.sort_values(by='weight', ascending=False).head(10)
                     fig4, ax4 = plt.subplots(figsize=(10, 6))
-                    sns.barplot(x='weight', y='CatCd', data=top_10_category, colors=sns.color_palette('pastel')), ax=ax4)
+                    sns.barplot(x='weight', y='CatCd', data=top_10_category, colors=sns.color_palette('pastel'), ax=ax4)
                     ax4.set_title('Top 10 Categories by Weight')
                     st.pyplot(fig4)
 
