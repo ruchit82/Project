@@ -108,8 +108,6 @@ if uploaded_file:
                     ax6.set_title('Total Weight Over Time')
                     st.pyplot(fig6)
 
-                except Exception as e:
-                    error_logs.append(f"Error in Monthly Sale Analysis: {e}")
 
         elif analysis_type == "Export Sale":
             st.write("### Export Sale Analysis")
@@ -177,16 +175,7 @@ if uploaded_file:
                     ax3.set_title("Bottom 5 Parties by Weight")
                     st.pyplot(fig3)
 
-            except Exception as e:
-                error_logs.append(f"Error in Export Sale Analysis: {e}")
 
-    except Exception as e:
-        st.error(f"Error loading the file: {e}")
-    finally:
-        if error_logs:
-            st.write("### Errors Encountered")
-            for error in error_logs:
-                st.error(error)
 else:
     st.info("Please upload an Excel or CSV file to start the analysis.")
 
