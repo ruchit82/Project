@@ -43,6 +43,11 @@ if uploaded_file:
                         ascending=False, method='min')
                     party_weight_summary = party_weight_summary.sort_values(by='weight', ascending=False)
 
+                    # Category-wise weight summary
+                    CatCd_summary = df.groupby('CatCd')['weight'].sum().reset_index()
+                    CatCd_summary['Rank'] = CatCd_summary['weight'].rank(ascending=False, method='min')
+                    CatCd_summary = CatCd_summary.sort_values(by='weight', ascending=False)
+
                     # Dropdown for party selection
                     st.write("### Check Party Rank")
                     party_name = st.selectbox("Select a party name:", options=party_weight_summary['parName'].unique())
@@ -72,17 +77,17 @@ if uploaded_file:
 
                     # Bar Plot: Top 10 Categories by Weight
                     st.write("### Top 10 Categories by Weight")
-                    top_10_category = CatCd_summary.sort_values(by='weight', ascending=False).head(10)
+                    top_10_category = CatCd_summary.head(10)
                     fig4, ax4 = plt.subplots(figsize=(10, 6))
-                    sns.barplot(x='weight', y='CatCd', data=top_10_category, colors=sns.color_palette('pastel'), ax=ax4)
+                    sns.barplot(x='weight', y='CatCd', data=top_10_category, palette='pastel', ax=ax4)
                     ax4.set_title('Top 10 Categories by Weight')
                     st.pyplot(fig4)
 
                     # Bar Plot: Bottom 5 Categories by Weight
                     st.write("### Bottom 5 Categories by Weight")
-                    bottom_5_category = CatCd_summary.sort_values(by='weight').head(5)
+                    bottom_5_category = CatCd_summary.tail(5)
                     fig5, ax5 = plt.subplots(figsize=(10, 6))
-                    sns.barplot(x='weight', y='Category', data=bottom_5_category, palette='Oranges_r', ax=ax5)
+                    sns.barplot(x='weight', y='CatCd', data=bottom_5_category, palette='Oranges_r', ax=ax5)
                     ax5.set_title('Bottom 5 Categories by Weight')
                     st.pyplot(fig5)
 
