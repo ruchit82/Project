@@ -62,13 +62,13 @@ if uploaded_file:
                 col1, col2 = st.columns(2)
                 with col1:
                     st.write("### Top 10 Parties by Weight")
-                    fig1, ax1 = plt.subplots(figsize=(10, 6))
+                    fig1, ax1 = plt.subplots()
                     sns.barplot(x='weight', y='parName', data=party_weight_summary.head(10), palette='Blues_r', ax=ax1)
                     ax1.set_title('Top 10 Parties by Weight')
                     st.pyplot(fig1)
                 with col2:
                     st.write("### Bottom 5 Parties by Weight")
-                    fig2, ax2 = plt.subplots(figsize=(10, 6))
+                    fig2, ax2 = plt.subplots()
                     sns.barplot(x='weight', y='parName', data=party_weight_summary.tail(5), palette='Reds_r', ax=ax2)
                     ax2.set_title('Bottom 5 Parties by Weight')
                     st.pyplot(fig2)
@@ -76,13 +76,13 @@ if uploaded_file:
                 col3, col4 = st.columns(2)
                 with col3:
                     st.write("### Top 10 Categories by Weight")
-                    fig3, ax3 = plt.subplots(figsize=(10, 6))
+                    fig3, ax3 = plt.subplots()
                     sns.barplot(x='weight', y='CatCd', data=CatCd_summary.head(10), palette='pastel', ax=ax3)
                     ax3.set_title('Top 10 Categories by Weight')
                     st.pyplot(fig3)
                 with col4:
                     st.write("### Bottom 5 Categories by Weight")
-                    fig4, ax4 = plt.subplots(figsize=(10, 6))
+                    fig4, ax4 = plt.subplots()
                     sns.barplot(x='weight', y='CatCd', data=CatCd_summary.tail(5), palette='Oranges_r', ax=ax4)
                     ax4.set_title('Bottom 5 Categories by Weight')
                     st.pyplot(fig4)
@@ -90,7 +90,7 @@ if uploaded_file:
                 st.write("### Total Weight Over Time")
                 df['DocDate'] = pd.to_datetime(df['DocDate'])
                 time_series = df.groupby('DocDate')['weight'].sum().reset_index()
-                fig5, ax5 = plt.subplots(figsize=(10, 6))
+                fig5, ax5 = plt.subplots()
                 sns.lineplot(x='DocDate', y='weight', data=time_series, marker='o', color='blue', ax=ax5)
                 ax5.set_title('Total Weight Over Time')
                 st.pyplot(fig5)
@@ -108,13 +108,13 @@ if uploaded_file:
             time_summary = data.groupby('DATE').agg({'WEIGHT': 'sum', 'QTY': 'sum'}).reset_index()
             col1, col2 = st.columns(2)
             with col1:
-                fig6, ax6 = plt.subplots(figsize=(10, 6))
-                sns.lineplot(x='DATE', y='WEIGHT', data=time_summary, marker='o', label='Weight')
+                fig6, ax6 = plt.subplots()
+                sns.lineplot(x='DATE', y='WEIGHT', data=time_summary, marker='o', label='Weight', ax=ax6)
                 ax6.set_title("Weight Over Time")
                 st.pyplot(fig6)
             with col2:
-                fig7, ax7 = plt.subplots(figsize=(10, 6))
-                sns.lineplot(x='DATE', y='QTY', data=time_summary, marker='o', label='Quantity')
+                fig7, ax7 = plt.subplots()
+                sns.lineplot(x='DATE', y='QTY', data=time_summary, marker='o', label='Quantity', ax=ax7)
                 ax7.set_title("Quantity Over Time")
                 st.pyplot(fig7)
     except Exception as e:
