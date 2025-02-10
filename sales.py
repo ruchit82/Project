@@ -31,7 +31,7 @@ if uploaded_file:
             st.dataframe(data.head(10))
 
             # Define required columns for analysis
-            required_columns = ['DocDate', 'type', 'parName', 'CATEGORY','CatCd', 'weight', 'noPcs']
+            required_columns = ['DocDate', 'type', 'parName', 'CATEGORY', 'CatCd', 'weight', 'noPcs']
             if not all(col in data.columns for col in required_columns):
                 st.error(f"The dataset must contain these columns: {required_columns}")
             else:
@@ -112,55 +112,54 @@ if uploaded_file:
             st.write("First 10 rows of the dataset:")
             st.dataframe(data.head(10))
 
-            #  graphs
-             # Weight and Quantity Summary
-                st.write("### Weight and Quantity Summary")
-                col1, col2 = st.columns(2)
-                with col1:
-                    st.write("#### Statistics for WEIGHT")
-                    st.write(data['WEIGHT'].describe())
-                with col2:
-                    st.write("#### Statistics for QTY")
-                    st.write(data['QTY'].describe())
+            # Weight and Quantity Summary
+            st.write("### Weight and Quantity Summary")
+            col1, col2 = st.columns(2)
+            with col1:
+                st.write("#### Statistics for WEIGHT")
+                st.write(data['WEIGHT'].describe())
+            with col2:
+                st.write("#### Statistics for QTY")
+                st.write(data['QTY'].describe())
 
-                # Unique counts for categorical columns
-                st.write("### Unique Values in Categorical Columns")
-                st.write(f"Unique Parties: {data['PARTY'].nunique()}")
-                st.write(f"Unique Types: {data['TYPE'].nunique()}")
-                st.write(f"Unique Sizes: {data['SIZE'].nunique()}")
+            # Unique counts for categorical columns
+            st.write("### Unique Values in Categorical Columns")
+            st.write(f"Unique Parties: {data['PARTY'].nunique()}")
+            st.write(f"Unique Types: {data['TYPE'].nunique()}")
+            st.write(f"Unique Sizes: {data['SIZE'].nunique()}")
 
-                # Time-based Analysis
-                st.write("### Weight and Quantity Over Time")
-                data['DATE'] = pd.to_datetime(data['DATE'])
-                time_summary = data.groupby('DATE').agg({'WEIGHT': 'sum', 'QTY': 'sum'}).reset_index()
-                fig1, ax1 = plt.subplots(figsize=(10, 6))
-                sns.lineplot(x='DATE', y='WEIGHT', data=time_summary, marker='o', label='Weight')
-                sns.lineplot(x='DATE', y='QTY', data=time_summary, marker='o', label='Quantity')
-                ax1.set_title("Weight and Quantity Over Time")
-                plt.xlabel("Date")
-                plt.ylabel("Total")
-                plt.legend()
-                st.pyplot(fig1)
+            # Time-based Analysis
+            st.write("### Weight and Quantity Over Time")
+            data['DATE'] = pd.to_datetime(data['DATE'])
+            time_summary = data.groupby('DATE').agg({'WEIGHT': 'sum', 'QTY': 'sum'}).reset_index()
+            fig1, ax1 = plt.subplots(figsize=(10, 6))
+            sns.lineplot(x='DATE', y='WEIGHT', data=time_summary, marker='o', label='Weight')
+            sns.lineplot(x='DATE', y='QTY', data=time_summary, marker='o', label='Quantity')
+            ax1.set_title("Weight and Quantity Over Time")
+            plt.xlabel("Date")
+            plt.ylabel("Total")
+            plt.legend()
+            st.pyplot(fig1)
 
-                # Party-based Analysis
-                st.write("### Top and Bottom Parties by Weight")
-                party_summary = data.groupby('PARTY')['WEIGHT'].sum().reset_index()
-                top_10_parties = party_summary.sort_values(by='WEIGHT', ascending=False).head(10)
-                bottom_5_parties = party_summary.sort_values(by='WEIGHT').head(5)
+            # Party-based Analysis
+            st.write("### Top and Bottom Parties by Weight")
+            party_summary = data.groupby('PARTY')['WEIGHT'].sum().reset_index()
+            top_10_parties = party_summary.sort_values(by='WEIGHT', ascending=False).head(10)
+            bottom_5_parties = party_summary.sort_values(by='WEIGHT').head(5)
 
-                col1, col2 = st.columns(2)
-                with col1:
-                    st.write("#### Top 10 Parties")
-                    fig2, ax2 = plt.subplots(figsize=(8, 6))
-                    sns.barplot(x='WEIGHT', y='PARTY', data=top_10_parties, palette='Blues_r')
-                    ax2.set_title("Top 10 Parties by Weight")
-                    st.pyplot(fig2)
-                with col2:
-                    st.write("#### Bottom 5 Parties")
-                    fig3, ax3 = plt.subplots(figsize=(8, 6))
-                    sns.barplot(x='WEIGHT', y='PARTY', data=bottom_5_parties, palette='Reds_r')
-                    ax3.set_title("Bottom 5 Parties by Weight")
-                    st.pyplot(fig3)
+            col1, col2 = st.columns(2)
+            with col1:
+                st.write("#### Top 10 Parties")
+                fig2, ax2 = plt.subplots(figsize=(8, 6))
+                sns.barplot(x='WEIGHT', y='PARTY', data=top_10_parties, palette='Blues_r')
+                ax2.set_title("Top 10 Parties by Weight")
+                st.pyplot(fig2)
+            with col2:
+                st.write("#### Bottom 5 Parties")
+                fig3, ax3 = plt.subplots(figsize=(8, 6))
+                sns.barplot(x='WEIGHT', y='PARTY', data=bottom_5_parties, palette='Reds_r')
+                ax3.set_title("Bottom 5 Parties by Weight")
+                st.pyplot(fig3)
     except Exception as e:
         st.error(f"An error occurred while processing the file: {e}")
 else:
