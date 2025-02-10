@@ -1,4 +1,4 @@
-[1:03 pm, 10/2/2025] Ruchit: # -- coding: utf-8 --
+# -- coding: utf-8 --
 """sales.ipynb"""
 
 import streamlit as st
