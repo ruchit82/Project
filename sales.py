@@ -1,4 +1,4 @@
-# -- coding: utf-8 --
+# -*- coding: utf-8 -*-
 """sales.ipynb"""
 
 import streamlit as st
@@ -7,34 +7,9 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from io import StringIO
 
-st.set_page_config(layout="wide")  # Set the layout to wide mode
-st.title("Sales Analysis Dashboard")
-
-uploaded_file = st.file_uploader("Upload a CSV or Excel file", type=["csv", "xlsx"])
-
-analysis_type = st.selectbox("Select the type of analysis", ["Monthly Sale", "Export Sale"])
-
-if uploaded_file:
-    try:
-        if uploaded_file.name.endswith('.csv'):
-            data = pd.read_csv(uploaded_file)
-        else:
-            data = pd.read_excel(uploaded_file)
-
-        if analysis_type == "Monthly Sale":
-            st.write("### Monthly Sale Analysis")
-            st.write("First 10 rows of the d…
-[2:01 pm, 10/2/2025] Ruchit: # -- coding: utf-8 --
-"""sales.ipynb"""
-
-import streamlit as st
-import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
-from io import StringIO
-
-# Set Streamlit page layout to wide for better dashboard visibility
+# Set Streamlit page layout to wide for better dashboard visibility (MOVED TO FIRST COMMAND)
 st.set_page_config(layout="wide")
+
 st.title("Sales Analysis Dashboard")
 
 # File uploader for CSV or Excel files
@@ -53,7 +28,7 @@ if uploaded_file:
 
         if analysis_type == "Monthly Sale":
             st.write("### Monthly Sale Analysis")
-            st.write("First 10 rows of the dataset:")
+            st.write("### First 10 rows of the dataset:")  # FIXED STRING ISSUE
             st.dataframe(data.head(10))
 
             # Define required columns for analysis
@@ -90,9 +65,9 @@ if uploaded_file:
                 party_name = st.selectbox("Select a party name:", options=party_weight_summary['parName'].unique())
                 if party_name:
                     party_details = party_weight_summary[party_weight_summary['parName'] == party_name]
-                    st.write(f"*Rank:* {int(party_details['Rank'].values[0])}")
-                    st.write(f"*Party Name:* {party_name}")
-                    st.write(f"*Total Weight:* {party_details['weight'].values[0]:.2f}")
+                    st.write(f"**Rank:** {int(party_details['Rank'].values[0])}")
+                    st.write(f"**Party Name:** {party_name}")
+                    st.write(f"**Total Weight:** {party_details['weight'].values[0]:.2f}")
 
                 # Visualization for top and bottom parties
                 col1, col2 = st.columns(2)
@@ -135,7 +110,7 @@ if uploaded_file:
 
         elif analysis_type == "Export Sale":
             st.write("### Export Sale Analysis")
-            st.write("First 10 rows of the dataset:")
+            st.write("### First 10 rows of the dataset:")  # FIXED STRING ISSUE
             st.dataframe(data.head(10))
 
             # Weight and Quantity Summary
