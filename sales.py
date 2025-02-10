@@ -88,6 +88,17 @@ if uploaded_file:
                     st.pyplot(fig5)
                 except Exception as e:
                     st.error(f"An error occurred during Monthly Sale analysis: {e}")
+        
+        elif analysis_type == "Export Sale":
+            st.write("### Export Sale Analysis")
+            if 'Export' in data.columns:
+                export_data = data.groupby('Export')['weight'].sum().reset_index()
+                fig6, ax6 = plt.subplots(figsize=(8, 6))
+                sns.barplot(x='weight', y='Export', data=export_data, palette='coolwarm', ax=ax6)
+                ax6.set_title('Export Sales by Category')
+                st.pyplot(fig6)
+            else:
+                st.error("The dataset does not contain the 'Export' column.")
     except Exception as e:
         st.error(f"An error occurred while processing the file: {e}")
 else:
