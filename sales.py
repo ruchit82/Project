@@ -106,12 +106,17 @@ if uploaded_file:
             st.write("### Weight and Quantity Over Time")
             data['DATE'] = pd.to_datetime(data['DATE'])
             time_summary = data.groupby('DATE').agg({'WEIGHT': 'sum', 'QTY': 'sum'}).reset_index()
-            fig6, ax6 = plt.subplots(figsize=(10, 6))
-            sns.lineplot(x='DATE', y='WEIGHT', data=time_summary, marker='o', label='Weight')
-            sns.lineplot(x='DATE', y='QTY', data=time_summary, marker='o', label='Quantity')
-            ax6.set_title("Weight and Quantity Over Time")
-            plt.legend()
-            st.pyplot(fig6)
+            col1, col2 = st.columns(2)
+            with col1:
+                fig6, ax6 = plt.subplots(figsize=(10, 6))
+                sns.lineplot(x='DATE', y='WEIGHT', data=time_summary, marker='o', label='Weight')
+                ax6.set_title("Weight Over Time")
+                st.pyplot(fig6)
+            with col2:
+                fig7, ax7 = plt.subplots(figsize=(10, 6))
+                sns.lineplot(x='DATE', y='QTY', data=time_summary, marker='o', label='Quantity')
+                ax7.set_title("Quantity Over Time")
+                st.pyplot(fig7)
     except Exception as e:
         st.error(f"An error occurred while processing the file: {e}")
 else:
