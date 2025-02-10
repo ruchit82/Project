@@ -1,53 +1,10 @@
-# -*- coding: utf-8 -*-
-"""sales.ipynb"""
-
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 from io import StringIO
 
-# Custom CSS for enhanced dashboard styling
-st.markdown("""
-    <style>
-        .main {
-            background-color: #f5f5f5;
-        }
-        .dashboard-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-            gap: 20px;
-            padding: 20px;
-        }
-        .chart-box {
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
-        }
-        .kpi-container {
-            display: flex;
-            justify-content: space-around;
-            padding: 20px;
-        }
-        .kpi-box {
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
-            text-align: center;
-            width: 30%;
-        }
-        .kpi-title {
-            font-size: 18px;
-            font-weight: bold;
-        }
-        .kpi-value {
-            font-size: 24px;
-            color: #007bff;
-        }
-    </style>
-""", unsafe_allow_html=True)
+st.set_page_config(layout="wide")  # Enables a wide layout for a dashboard-like view
 
 st.title("Sales Analysis Dashboard")
 
@@ -56,84 +13,81 @@ uploaded_file = st.file_uploader("Upload a CSV or Excel file", type=["csv", "xls
 analysis_type = st.selectbox("Select the type of analysis", ["Monthly Sale", "Export Sale"])
 
 if uploaded_file:
+    error_logs = []  # Collect errors for display
     try:
         if uploaded_file.name.endswith('.csv'):
             data = pd.read_csv(uploaded_file)
         else:
             data = pd.read_excel(uploaded_file)
-
+        
         if analysis_type == "Monthly Sale":
             st.write("### Monthly Sale Analysis")
             st.write("First 10 rows of the dataset:")
             st.dataframe(data.head(10))
 
-            required_columns = ['DocDate', 'type', 'parName', 'CATEGORY', 'CatCd', 'weight', 'noPcs']
+            required_columns = ['DocDate', 'type', 'parName', 'CATEGORY','CatCd', 'weight', 'noPcs']
             if not all(col in data.columns for col in required_columns):
                 st.error(f"The dataset must contain these columns: {required_columns}")
             else:
-                excluded_categories = ['ST', 'LOOSE PCS', 'PARA BIDS', 'Langadi', 'PROCESS LOSS', 'SCRAP PCC', 'BALL CHAIN', 'SIGNING TAR', 'Fine']
-                df = data[~data['CATEGORY'].isin(excluded_categories)]
+                try:
+                    excluded_categories = ['ST', 'LOOSE PCS', 'PARA BIDS', 'Langadi', 'PROCESS LOSS', 'SCRAP PCC', 'BALL CHAIN', 'SIGNING TAR', 'Fine']
+                    df = data[~data['CATEGORY'].isin(excluded_categories)]
 
-                total_weight = df['weight'].sum()
-                total_transactions = df.shape[0]
-                top_party = df.groupby('parName')['weight'].sum().idxmax()
+                    party_weight_summary = df.groupby('parName')['weight'].sum().reset_index()
+                    party_weight_summary['Rank'] = party_weight_summary['weight'].rank(ascending=False, method='min')
+                    party_weight_summary = party_weight_summary.sort_values(by='weight', ascending=False)
 
-                st.markdown('<div class="kpi-container">', unsafe_allow_html=True)
-                
-                st.markdown('<div class="kpi-box">', unsafe_allow_html=True)
-                st.markdown(f'<div class="kpi-title">Total Sales Weight</div><div class="kpi-value">{total_weight:.2f}</div>', unsafe_allow_html=True)
-                st.markdown('</div>', unsafe_allow_html=True)
+                    CatCd_summary = df.groupby('CatCd')['weight'].sum().reset_index()
+                    CatCd_summary['Rank'] = CatCd_summary['weight'].rank(ascending=False, method='min')
+                    CatCd_summary = CatCd_summary.sort_values(by='weight', ascending=False)
 
-                st.markdown('<div class="kpi-box">', unsafe_allow_html=True)
-                st.markdown(f'<div class="kpi-title">Total Transactions</div><div class="kpi-value">{total_transactions}</div>', unsafe_allow_html=True)
-                st.markdown('</div>', unsafe_allow_html=True)
+                    st.write("### Key Performance Indicators")
+                    col1, col2, col3 = st.columns(3)
+                    col1.metric("Total Sales Weight", f"{df['weight'].sum():,.2f}")
+                    col2.metric("Total Pieces Sold", f"{df['noPcs'].sum()}")
+                    col3.metric("Unique Categories", f"{df['CATEGORY'].nunique()}")
+                    
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        st.write("### Top 10 Parties by Weight")
+                        top_10_parties = party_weight_summary.head(10)
+                        fig1, ax1 = plt.subplots(figsize=(8, 6))
+                        sns.barplot(x='weight', y='parName', data=top_10_parties, palette='Blues_r', ax=ax1)
+                        ax1.set_title('Top 10 Parties by Weight')
+                        st.pyplot(fig1)
+                    with col2:
+                        st.write("### Bottom 5 Parties by Weight")
+                        bottom_5_parties = party_weight_summary.tail(5)
+                        fig2, ax2 = plt.subplots(figsize=(8, 6))
+                        sns.barplot(x='weight', y='parName', data=bottom_5_parties, palette='Reds_r', ax=ax2)
+                        ax2.set_title('Bottom 5 Parties by Weight')
+                        st.pyplot(fig2)
+                    
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        st.write("### Top 10 Categories by Weight")
+                        top_10_category = CatCd_summary.head(10)
+                        fig3, ax3 = plt.subplots(figsize=(8, 6))
+                        sns.barplot(x='weight', y='CatCd', data=top_10_category, palette='pastel', ax=ax3)
+                        ax3.set_title('Top 10 Categories by Weight')
+                        st.pyplot(fig3)
+                    with col2:
+                        st.write("### Bottom 5 Categories by Weight")
+                        bottom_5_category = CatCd_summary.tail(5)
+                        fig4, ax4 = plt.subplots(figsize=(8, 6))
+                        sns.barplot(x='weight', y='CatCd', data=bottom_5_category, palette='Oranges_r', ax=ax4)
+                        ax4.set_title('Bottom 5 Categories by Weight')
+                        st.pyplot(fig4)
 
-                st.markdown('<div class="kpi-box">', unsafe_allow_html=True)
-                st.markdown(f'<div class="kpi-title">Top Party</div><div class="kpi-value">{top_party}</div>', unsafe_allow_html=True)
-                st.markdown('</div>', unsafe_allow_html=True)
-
-                st.markdown('</div>', unsafe_allow_html=True)
-                
-                party_weight_summary = df.groupby('parName')['weight'].sum().reset_index()
-                party_weight_summary['Rank'] = party_weight_summary['weight'].rank(ascending=False, method='min')
-                party_weight_summary = party_weight_summary.sort_values(by='weight', ascending=False)
-
-                CatCd_summary = df.groupby('CatCd')['weight'].sum().reset_index()
-                CatCd_summary['Rank'] = CatCd_summary['weight'].rank(ascending=False, method='min')
-                CatCd_summary = CatCd_summary.sort_values(by='weight', ascending=False)
-
-                st.markdown('<div class="dashboard-container">', unsafe_allow_html=True)
-
-                st.markdown('<div class="chart-box">', unsafe_allow_html=True)
-                st.write("### Top 10 Parties by Weight")
-                top_10_parties = party_weight_summary.head(10)
-                fig2, ax2 = plt.subplots()
-                sns.barplot(x='weight', y='parName', data=top_10_parties, palette='Blues_r', ax=ax2)
-                ax2.set_title('Top 10 Parties by Weight')
-                st.pyplot(fig2)
-                st.markdown('</div>', unsafe_allow_html=True)
-
-                st.markdown('<div class="chart-box">', unsafe_allow_html=True)
-                st.write("### Bottom 5 Parties by Weight")
-                bottom_5_parties = party_weight_summary.tail(5)
-                fig3, ax3 = plt.subplots()
-                sns.barplot(x='weight', y='parName', data=bottom_5_parties, palette='Reds_r', ax=ax3)
-                ax3.set_title('Bottom 5 Parties by Weight')
-                st.pyplot(fig3)
-                st.markdown('</div>', unsafe_allow_html=True)
-
-                st.markdown('<div class="chart-box">', unsafe_allow_html=True)
-                st.write("### Total Weight Over Time")
-                df['DocDate'] = pd.to_datetime(df['DocDate'])
-                time_series = df.groupby('DocDate')['weight'].sum().reset_index()
-                fig6, ax6 = plt.subplots()
-                sns.lineplot(x='DocDate', y='weight', data=time_series, marker='o', color='blue', ax=ax6)
-                ax6.set_title('Total Weight Over Time')
-                st.pyplot(fig6)
-                st.markdown('</div>', unsafe_allow_html=True)
-
-                st.markdown('</div>', unsafe_allow_html=True)
-
+                    st.write("### Total Weight Over Time")
+                    df['DocDate'] = pd.to_datetime(df['DocDate'])
+                    time_series = df.groupby('DocDate')['weight'].sum().reset_index()
+                    fig5, ax5 = plt.subplots(figsize=(10, 6))
+                    sns.lineplot(x='DocDate', y='weight', data=time_series, marker='o', color='blue', ax=ax5)
+                    ax5.set_title('Total Weight Over Time')
+                    st.pyplot(fig5)
+                except Exception as e:
+                    st.error(f"An error occurred during Monthly Sale analysis: {e}")
     except Exception as e:
         st.error(f"An error occurred while processing the file: {e}")
 else:
