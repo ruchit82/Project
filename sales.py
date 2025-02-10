@@ -1,11 +1,11 @@
-# -*- coding: utf-8 -*-
-"""sales.ipynb"""
-
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 from io import StringIO
+
+# ✅ Move this to the top before anything else
+st.set_page_config(layout="wide")
 
 # Custom CSS for styling
 st.markdown("""
@@ -17,9 +17,10 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Set Streamlit page layout to wide
-st.set_page_config(layout="wide")
 st.markdown('<p class="big-title">📊 Sales Analysis Dashboard</p>', unsafe_allow_html=True)
+# -*- coding: utf-8 -*-
+"""sales.ipynb"""
+
 
 # File uploader
 uploaded_file = st.file_uploader("Upload a CSV or Excel file", type=["csv", "xlsx"])
