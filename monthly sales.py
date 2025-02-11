@@ -1,131 +1,56 @@
 import streamlit as st
 import pandas as pd
-import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-# Function to load and analyze Excel data
-def analyze_excel_data(file_path):
+def load_data(uploaded_file):
     try:
-        # Load data
-        data = pd.read_excel(file_path)
-        st.write("### Preview of the Data")
-        st.write(data.head(10))
-
-        # Display unique categories before deletion
-        unique_categories_before = data['CATEGORY'].unique()
-        st.write("### Unique Categories Before Deletion")
-        st.write(unique_categories_before)
-
-        # Filter data
-        df = data[~data['CATEGORY'].isin(['ST', 'LOOSE PCS', 'PARA BIDS', 'Langadi', 'PROCESS LOSS', 'SCRAP PCC', 'BALL CHAIN', 'SIGNING TAR', 'Fine'])]
-
-        # Display filtered data
-        st.write("### Data After Deleting Specific Categories")
-        st.write(df)
-
-        # Display unique categories after deletion
-        unique_categories_after = df['CATEGORY'].unique()
-        st.write("### Unique Categories After Deletion")
-        st.write(unique_categories_after)
-
-        # Check for required columns
-        required_columns = ['DocDate', 'type', 'parName', 'CATEGORY', 'weight', 'noPcs']
-        if not all(col in data.columns for col in required_columns):
-            st.error(f"The dataset must contain these columns: {required_columns}")
+        if uploaded_file.name.endswith('.csv'):
+            return pd.read_csv(uploaded_file)
         else:
-            # Party weight summary
-            party_weight_summary = df.groupby('parName')['weight'].sum().reset_index()
-            top_10_parties = party_weight_summary.sort_values(by='weight', ascending=False).head(10)
-            bottom_5_parties = party_weight_summary.sort_values(by='weight', ascending=True).head(5)
-
-            st.write("### Bottom 5 Parties by Weight")
-            st.write(bottom_5_parties)
-
-            st.write("### Top 10 Parties by Weight")
-            st.write(top_10_parties)
-
-            # Category-wise summary
-            category_summary = df.groupby('CATEGORY').agg({
-                'weight': 'sum',
-                'noPcs': 'sum'
-            }).reset_index()
-
-            # Top 10 categories by weight
-            top_10_categories = category_summary.sort_values(by='weight', ascending=False).head(10)
-            st.write("### Top 10 Categories by Weight")
-            st.write(top_10_categories)
-
-            # Bottom 5 categories by weight
-            bottom_5_categories = category_summary.sort_values(by='weight', ascending=True).head(5)
-            st.write("### Bottom 5 Categories by Weight")
-            st.write(bottom_5_categories)
-
-            # Category-wise summary output
-            st.write("### Category-wise Summary")
-            st.write(category_summary)
-
-            # Bar Plot: Top 10 Parties by Weight
-            st.write("### Bar Plot: Top 10 Parties by Weight")
-            fig, ax = plt.subplots(figsize=(10, 6))
-            sns.barplot(x='weight', y='parName', data=top_10_parties, palette='Blues_r', ax=ax)
-            ax.set_title('Top 10 Parties by Weight')
-            st.pyplot(fig)
-
-            # Bar Plot: Bottom 5 Parties by Weight
-            st.write("### Bar Plot: Bottom 5 Parties by Weight")
-            fig, ax = plt.subplots(figsize=(10, 6))
-            sns.barplot(x='weight', y='parName', data=bottom_5_parties, palette='Reds_r', ax=ax)
-            ax.set_title('Bottom 5 Parties by Weight')
-            st.pyplot(fig)
-
-            # Bar Plot: Top 10 Categories by Weight
-            st.write("### Bar Plot: Top 10 Categories by Weight")
-            fig, ax = plt.subplots(figsize=(10, 6))
-            sns.barplot(x='weight', y='CATEGORY', data=top_10_categories, palette='Greens_r', ax=ax)
-            ax.set_title('Top 10 Categories by Weight')
-            st.pyplot(fig)
-
-            # Bar Plot: Bottom 5 Categories by Weight
-            st.write("### Bar Plot: Bottom 5 Categories by Weight")
-            fig, ax = plt.subplots(figsize=(10, 6))
-            sns.barplot(x='weight', y='CATEGORY', data=bottom_5_categories, palette='Oranges_r', ax=ax)
-            ax.set_title('Bottom 5 Categories by Weight')
-            st.pyplot(fig)
-
-            # Pie Chart: Category-wise Weight Distribution (Top 15)
-            st.write("### Pie Chart: Category-wise Weight Distribution (Top 15)")
-            top_15_categories = category_summary.sort_values(by='weight', ascending=False).head(15)
-            fig, ax = plt.subplots(figsize=(8, 8))
-            ax.pie(top_15_categories['weight'], labels=top_15_categories['CATEGORY'], autopct='%1.1f%%', startangle=140, colors=sns.color_palette('pastel'))
-            ax.set_title('Category-wise Weight Distribution (Top 15)')
-            st.pyplot(fig)
-
-            # Line Plot: Weight Over Time
-            st.write("### Line Plot: Total Weight Over Time")
-            df['DocDate'] = pd.to_datetime(df['DocDate'])
-            time_series = df.groupby('DocDate')['weight'].sum().reset_index()
-            fig, ax = plt.subplots(figsize=(12, 6))
-            sns.lineplot(x='DocDate', y='weight', data=time_series, marker='o', color='blue', ax=ax)
-            ax.set_title('Total Weight Over Time')
-            st.pyplot(fig)
-
-            # Dropdown for party selection
-            st.write("### Check Party Rank")
-            party_name = st.selectbox("Select a party name:", options=party_weight_summary['parName'].unique())
-
-            if party_name:
-                party_details = party_weight_summary[party_weight_summary['parName'] == party_name]
-                st.write(f"**Rank:** {int(party_details['Rank'].values[0])}")
-                st.write(f"**Party Name:** {party_name}")
-                st.write(f"**Total Weight:** {party_details['weight'].values[0]:.2f}")
-
+            return pd.read_excel(uploaded_file)
     except Exception as e:
-        st.error(f"An error occurred while processing the file: {e}")
+        st.error(f"Error loading file: {e}")
+        return None
 
-# Streamlit app
-st.title("Excel Data Analysis App")
-file_path = st.text_input("Please enter the file path to your Excel file:")
-if file_path:
-    analyze_excel_data(file_path)
+def main():
+    st.title("Sales Analysis")
+    
+    uploaded_file = st.file_uploader("Upload a CSV or Excel file", type=["csv", "xlsx"])
+    
+    if uploaded_file is not None:
+        data = load_data(uploaded_file)
+        if data is not None:
+            st.subheader("First 10 rows of data")
+            st.dataframe(data.head(10))
+            
+            required_columns = ['DocDate', 'type', 'parName', 'CATEGORY', 'CatCd', 'weight', 'noPcs']
+            if not all(col in data.columns for col in required_columns):
+                st.error("Missing required columns.")
+            else:
+                data = data[~data['CATEGORY'].isin(['ST', 'LOOSE PCS', 'PARA BIDS', 'Langadi', 'PROCESS LOSS',
+                                                    'SCRAP PCC', 'BALL CHAIN', 'SIGNING TAR', 'Fine'])]
+                
+                party_weight_summary = data.groupby('parName')['weight'].sum().reset_index()
+                party_weight_summary = party_weight_summary.sort_values(by='weight', ascending=False)
+                
+                st.subheader("Summary Statistics")
+                st.write(f"Total Parties: {len(party_weight_summary)}")
+                st.write(f"Total Categories: {len(data['CatCd'].unique())}")
+                st.write(f"Total Weight: {round(data['weight'].sum(), 2)}")
+                
+                st.subheader("Top 10 Parties by Weight")
+                st.dataframe(party_weight_summary.head(10))
+                
+                st.subheader("Bottom 5 Parties by Weight")
+                st.dataframe(party_weight_summary.tail(5))
+                
+                # Visualization
+                st.subheader("Top 10 Parties by Weight - Bar Chart")
+                fig, ax = plt.subplots(figsize=(10, 5))
+                sns.barplot(x='weight', y='parName', data=party_weight_summary.head(10), ax=ax)
+                ax.set_title('Top 10 Parties by Weight')
+                st.pyplot(fig)
 
+if __name__ == "__main__":
+    main()
