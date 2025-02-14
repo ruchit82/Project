@@ -13,15 +13,14 @@ import datetime
 import requests
 from io import BytesIO
 
-# Microsoft SharePoint Direct Download Link (Replace with your actual link)
-DATA_URL = "YOUR_SHAREPOINT_DIRECT_LINK"  # Replace with your SharePoint direct download link
+# SharePoint File Direct URL (Modify with Your Actual Link)
+SHAREPOINT_URL = "https://YourCompany.sharepoint.com/sites/YourSite/Shared Documents/YourFile.xlsx"
 
 # Function to Load Data from SharePoint
 @st.cache_data
 def load_data():
     try:
-        # Fetch file from SharePoint using direct download link
-        response = requests.get(DATA_URL)
+        response = requests.get(SHAREPOINT_URL)
         if response.status_code == 200:
             df = pd.read_excel(BytesIO(response.content), engine="openpyxl")
             df['DATE'] = pd.to_datetime(df['DATE'], errors='coerce')  # Ensure DATE is in datetime format
@@ -42,7 +41,7 @@ page = st.sidebar.radio("🔍 Navigate to", ["Dashboard", "Full Inventory", "Age
 # Page 1: Dashboard
 if page == "Dashboard":
     st.title("📈 Stock Inventory Dashboard")
-
+    
     if not df.empty:
         # Summary stats
         total_pcs = df["PCS"].sum()
@@ -60,7 +59,7 @@ if page == "Dashboard":
 # Page 2: Full Inventory
 elif page == "Full Inventory":
     st.title("📋 Complete Inventory Data")
-
+    
     if not df.empty:
         st.dataframe(df)
         st.download_button("📥 Download Data", df.to_csv(index=False), "inventory.csv")
@@ -70,7 +69,7 @@ elif page == "Full Inventory":
 # Page 3: Aged Stock (More than 15 Days)
 elif page == "Aged Stock":
     st.title("⏳ Stock Older than 15 Days")
-
+    
     if not df.empty:
         cutoff_date = datetime.datetime.today() - datetime.timedelta(days=15)
         aged_stock = df[df["DATE"] < cutoff_date]
