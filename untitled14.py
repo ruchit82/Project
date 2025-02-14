@@ -12,7 +12,8 @@ import pandas as pd
 import datetime
 
 # Google Sheets CSV Link
-SHEET_URL = "https://docs.google.com/spreadsheets/d/1Jwx4TntDxlwghFn_eC_NgooXlpvR6WTDdvWy4PO0zgk/export?format=csv"
+SHEET_URL ="https://docs.google.com/spreadsheets/d/1Jwx4TntDxlwghFn_eC_NgooXlpvR6WTDdvWy4PO0zgk/export?format=csv"
+
 
 # Function to Load Data from Google Sheets
 @st.cache_data
