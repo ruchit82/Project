@@ -7,3 +7,9 @@ openpyxl
 PyPDF2
 request
 pywhatkit
+streamlit
+pandas
+numpy
+scikit-learn
+requests
+
