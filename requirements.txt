@@ -5,7 +5,5 @@ matplotlib
 seaborn
 openpyxl
 PyPDF2
+request
 pywhatkit
-git add .
-git commit -m "Fixed requirements and issues"
-git push origin main
