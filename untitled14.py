@@ -10,24 +10,17 @@ Original file is located at
 import streamlit as st
 import pandas as pd
 import datetime
-import requests
-from io import BytesIO
 
-# SharePoint File Direct URL (Modify with Your Actual Link)
-SHAREPOINT_URL = "https://itanjewe-my.sharepoint.com/:x:/g/personal/ruchit_sanap_itanjewels_in/EaGIuV0sUDNMiYN7M7xbeWMBt8btArknonNEGxubh4Hqmg?e=IR9hF8"
+# Google Sheets CSV Link
+SHEET_URL = "https://docs.google.com/spreadsheets/d/1Jwx4TntDxlwghFn_eC_NgooXlpvR6WTDdvWy4PO0zgk/export?format=csv"
 
-# Function to Load Data from SharePoint
+# Function to Load Data from Google Sheets
 @st.cache_data
 def load_data():
     try:
-        response = requests.get(SHAREPOINT_URL)
-        if response.status_code == 200:
-            df = pd.read_excel(BytesIO(response.content), engine="openpyxl")
-            df['DATE'] = pd.to_datetime(df['DATE'], errors='coerce')  # Ensure DATE is in datetime format
-            return df
-        else:
-            st.error(f"Failed to fetch data! HTTP Error {response.status_code}")
-            return pd.DataFrame()  # Return empty DataFrame if error occurs
+        df = pd.read_csv(SHEET_URL)
+        df["DATE"] = pd.to_datetime(df["DATE"], errors="coerce")  # Ensure DATE is in datetime format
+        return df
     except Exception as e:
         st.error(f"Error loading data: {e}")
         return pd.DataFrame()
@@ -41,25 +34,20 @@ page = st.sidebar.radio("🔍 Navigate to", ["Dashboard", "Full Inventory", "Age
 # Page 1: Dashboard
 if page == "Dashboard":
     st.title("📈 Stock Inventory Dashboard")
-    
+
     if not df.empty:
-        # Summary stats
         total_pcs = df["PCS"].sum()
         total_wt = df["WT"].sum()
         st.metric("📦 Total Pieces", total_pcs)
         st.metric("⚖️ Total Weight", total_wt)
-
-        # Visualization: Stock Distribution Over Time
         st.subheader("📅 Stock Distribution Over Time")
         st.line_chart(df.groupby(df["DATE"].dt.date)["PCS"].sum())
-
     else:
-        st.warning("⚠️ No data available! Please check your SharePoint link.")
+        st.warning("⚠️ No data available! Please check your Google Sheets link.")
 
 # Page 2: Full Inventory
 elif page == "Full Inventory":
     st.title("📋 Complete Inventory Data")
-    
     if not df.empty:
         st.dataframe(df)
         st.download_button("📥 Download Data", df.to_csv(index=False), "inventory.csv")
@@ -69,11 +57,9 @@ elif page == "Full Inventory":
 # Page 3: Aged Stock (More than 15 Days)
 elif page == "Aged Stock":
     st.title("⏳ Stock Older than 15 Days")
-    
     if not df.empty:
         cutoff_date = datetime.datetime.today() - datetime.timedelta(days=15)
         aged_stock = df[df["DATE"] < cutoff_date]
-
         if not aged_stock.empty:
             st.dataframe(aged_stock)
             st.download_button("📥 Download Aged Stock", aged_stock.to_csv(index=False), "aged_stock.csv")
@@ -81,5 +67,3 @@ elif page == "Aged Stock":
             st.info("✅ No stock older than 15 days.")
     else:
         st.warning("⚠️ No data available!")
-
-
