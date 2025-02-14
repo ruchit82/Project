@@ -4,7 +4,5 @@ numpy
 matplotlib
 seaborn
 openpyxl
-streamlit
 PyPDF2
-pandas
-openpyxl
+pywhatkit
