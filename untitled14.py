@@ -10,17 +10,15 @@ import pandas as pd
 import streamlit as st
 import requests
 
-# Use the correct Google Sheets CSV link
 SHEET_URL = "https://docs.google.com/spreadsheets/d/1Jwx4TntDxlwghFn_eC_NgooXlpvR6WTDdvWy4PO0zgk/export?format=csv"
 
-@st.cache_data
 def load_data():
     try:
         response = requests.get(SHEET_URL)
-        response.raise_for_status()  # Raise an error for bad responses (4xx, 5xx)
+        response.raise_for_status()  
         
         df = pd.read_csv(SHEET_URL)
-        df['DATE'] = pd.to_datetime(df['DATE'], errors='coerce')  # Convert DATE column
+        df['DATE'] = pd.to_datetime(df['DATE'], errors='coerce')
         return df
     
     except Exception as e:
@@ -29,7 +27,7 @@ def load_data():
 
 df = load_data()
 
-st.write("✅ Data Loaded Successfully!") if not df.empty else st.warning("⚠️ No data available!")
+st.write("✅ Live Data Loaded Successfully!") if not df.empty else st.warning("⚠️ No data available!")
 
 # Sidebar Navigation
 st.sidebar.title("📊 Inventory App")
