@@ -14,7 +14,7 @@ import requests
 from io import BytesIO
 
 # SharePoint File Direct URL (Modify with Your Actual Link)
-SHAREPOINT_URL = "https://YourCompany.sharepoint.com/sites/YourSite/Shared Documents/YourFile.xlsx"
+SHAREPOINT_URL = https://itanjewe-my.sharepoint.com/:x:/g/personal/ruchit_sanap_itanjewels_in/EaGIuV0sUDNMiYN7M7xbeWMBt8btArknonNEGxubh4Hqmg?e=IR9hF8
 
 # Function to Load Data from SharePoint
 @st.cache_data
@@ -81,4 +81,5 @@ elif page == "Aged Stock":
             st.info("✅ No stock older than 15 days.")
     else:
         st.warning("⚠️ No data available!")
+
 
