@@ -6,3 +6,6 @@ seaborn
 openpyxl
 PyPDF2
 pywhatkit
+git add .
+git commit -m "Fixed requirements and issues"
+git push origin main
