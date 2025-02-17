@@ -6,3 +6,5 @@ streamlit
 openpyxl
 scikit-learn
 requests
+FPDF
+fpdf
