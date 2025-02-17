@@ -29,8 +29,8 @@ def load_data(sheet_gid):
         df = pd.read_csv(url)
         df['DATE'] = pd.to_datetime(df['DATE'], errors='coerce')  # Ensure DATE is datetime
         
-        # Extract Category from Design No (e.g., CM-2973 -> Category: CM)
-        df['Category'] = df['DESIGN_NO'].apply(lambda x: str(x).split('-')[0] if pd.notnull(x) else '')
+        # Extract Category from DESIGN NO (e.g., CM-2973 -> Category: CM)
+        df['Category'] = df['DESIGN NO'].apply(lambda x: str(x).split('-')[0] if pd.notnull(x) else '')
         
         return df
     except Exception as e:
