@@ -12,6 +12,7 @@ import datetime
 import requests
 from io import BytesIO
 from fpdf import FPDF
+import plotly.express as px
 
 # Google Sheets Information
 GOOGLE_SHEET_URL = "https://docs.google.com/spreadsheets/d/1Jwx4TntDxlwghFn_eC_NgooXlpvR6WTDdvWy4PO0zgk/export?format=csv&gid="
@@ -109,7 +110,8 @@ elif page == "Dashboard":
         col1, col2 = st.columns(2)
         col1.metric("📦 Total Pieces", total_pcs)
         col2.metric("⚖️ Total Weight", total_wt)
-         # Salesperson Inventory Statistics
+
+        # Salesperson Inventory Statistics
         salesperson_pcs = df_sales["PCS"].sum()
         salesperson_wt = df_sales["WT"].sum()
         st.subheader("🚛 Salesperson Inventory Statistics")
@@ -124,11 +126,11 @@ elif page == "Dashboard":
         col5, col6 = st.columns(2)
         col5.metric("📦 Factory Pieces", factory_pcs)
         col6.metric("⚖️ Factory Weight", factory_wt)
-        
+
         # Bar Chart - Overall Inventory Categories by Weight
-        overall_inventory = pd.concat([salesperson_inventory, factory_inventory])
-        category_weight = overall_inventory.groupby("Category")["WEIGHT"].sum().reset_index()
-        fig = px.bar(category_weight, x='Category', y='WEIGHT', title='Overall Inventory Categories by Weight', color='Category')
+        overall_inventory = pd.concat([df_sales, df_factory])
+        category_weight = overall_inventory.groupby("Category")["WT"].sum().reset_index()
+        fig = px.bar(category_weight, x='Category', y='WT', title='Overall Inventory Categories by Weight', color='Category')
         st.plotly_chart(fig)
 
         # Visualization: Stock Distribution Over Time
