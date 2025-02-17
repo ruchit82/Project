@@ -10,7 +10,10 @@ https://colab.research.google.com/drive/1aHPwHTOHyDChtT8tTnmoHPKD_f39w-iK
 # -*- coding: utf-8 -*-
 import streamlit as st
 import pandas as pd
-import plotly.express as px
+import datetime
+import requests
+from io import BytesIO
+from fpdf import FPDF
 
 # Google Sheets Information
 GOOGLE_SHEET_URL = "https://docs.google.com/spreadsheets/d/1Jwx4TntDxlwghFn_eC_NgooXlpvR6WTDdvWy4PO0zgk/export?format=csv&gid="
@@ -26,88 +29,127 @@ def load_data(sheet_gid):
     try:
         url = GOOGLE_SHEET_URL + sheet_gid
         df = pd.read_csv(url)
-        df.dropna(how='all', inplace=True)  # Remove empty rows
+        df['DATE'] = pd.to_datetime(df['DATE'], errors='coerce')  # Ensure DATE is datetime
         
-        if 'DATE' in df.columns:
-            df['DATE'] = pd.to_datetime(df['DATE'], errors='coerce')  # Ensure DATE is datetime
-        
-        if 'DESIGN NO' in df.columns:
-            df['Category'] = df['DESIGN NO'].apply(lambda x: x.split('-')[0] if pd.notna(x) else 'Unknown')
-        else:
-            df['Category'] = 'Unknown'
+        # Extract Category from DESIGN NO (e.g., CM-2973 -> Category: CM)
+        df['Category'] = df['DESIGN NO'].apply(lambda x: str(x).split('-')[0] if pd.notnull(x) else '')
         
         return df
     except Exception as e:
         st.error(f"Error loading data: {e}")
         return pd.DataFrame()
 
-# Load data
-salesperson_inventory = load_data(SHEET_IDS['salesperson_inventory'])
-factory_inventory = load_data(SHEET_IDS['factory_inventory'])
+# Function to get aged stock (more than 15 days old)
+def get_aged_stock(df):
+    today = datetime.date.today()
+    aged_stock = df[df['DATE'].dt.date < (today - datetime.timedelta(days=15))]
+    return aged_stock
 
-# Sidebar Navigation
-st.sidebar.title("📦 Inventory Management")
-page = st.sidebar.radio("Navigation", ["Dashboard", "Salesperson Inventory", "Factory Inventory", "Overall Inventory", "Aged Stock"])
+# Function to generate Excel report
+def generate_excel(df, file_name):
+    buffer = BytesIO()
+    with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
+        df.to_excel(writer, index=False, sheet_name="Inventory")
+    buffer.seek(0)
+    return buffer
+
+# Function to generate PDF report
+def generate_pdf(df):
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_font("Arial", size=12)
+    
+    pdf.cell(200, 10, txt="Inventory Report", ln=True, align="C")
+    
+    # Add the column names as header
+    pdf.ln(10)
+    pdf.set_font("Arial", size=10)
+    for col in df.columns:
+        pdf.cell(30, 10, col, border=1)
+    pdf.ln(10)
+    
+    # Add rows
+    for _, row in df.iterrows():
+        for value in row:
+            pdf.cell(30, 10, str(value), border=1)
+        pdf.ln(10)
+    
+    return pdf.output(dest='S')
+
+# App Title and Sidebar Navigation
+st.sidebar.title("📊 Inventory App")
+page = st.sidebar.radio("🔍 Navigate to", ["Home", "Dashboard", "Salesperson Inventory", "Factory Inventory", "Aged Stock"])
+
+# Refresh Button (To Reload Data)
+if st.sidebar.button("🔄 Refresh Data"):
+    st.cache_data.clear()
+    st.success("Data refreshed successfully!")
+
+# Home Page
+if page == "Home":
+    st.title("🏠 Welcome to the Inventory Management App")
+    st.write("""
+    - 📊 **Dashboard:** View key inventory statistics.  
+    - 🚛 **Salesperson Inventory:** Check stock assigned to salespersons.  
+    - 🏭 **Factory Inventory:** Monitor stock available in the factory.  
+    - ⏳ **Aged Stock:** Track stock older than 15 days.  
+    - 🔄 **Use the refresh button** to get the latest data.
+    """)
 
 # Dashboard Page
-if page == "Dashboard":
-    st.title("📊 Inventory Dashboard")
-    overall_inventory = pd.concat([salesperson_inventory, factory_inventory], ignore_index=True)
-    if not overall_inventory.empty:
-        category_weight = overall_inventory.groupby("Category", as_index=False)["WEIGHT"].sum()
-        fig = px.bar(category_weight, x='Category', y='WEIGHT', title='Overall Inventory Categories by Weight', color='Category')
-        st.plotly_chart(fig, use_container_width=True)
-    else:
-        st.warning("No inventory data available.")
+elif page == "Dashboard":
+    st.title("📈 Stock Inventory Dashboard")
 
-# Function to render inventory pages
-def render_inventory_page(title, inventory_data):
-    st.title(title)
-    if inventory_data.empty:
-        st.warning("No data available.")
-        return
-    
-    st.subheader("🔍 Search & Filter")
-    search_term = st.text_input("Search by Design No", "").strip()
-    categories = inventory_data['Category'].dropna().unique()
-    category_filter = st.selectbox("Filter by Category", ['All'] + list(categories))
-    
-    filtered_data = inventory_data.copy()
-    if category_filter != 'All':
-        filtered_data = filtered_data[filtered_data['Category'] == category_filter]
-    if search_term:
-        filtered_data = filtered_data[filtered_data['DESIGN NO'].astype(str).str.contains(search_term, case=False, na=False)]
-    
-    st.dataframe(filtered_data, use_container_width=True)
+    df_sales = load_data(SHEET_IDS["salesperson_inventory"])
+    df_factory = load_data(SHEET_IDS["factory_inventory"])
+
+    if not df_sales.empty and not df_factory.empty:
+        # Overall Inventory Statistics
+        total_pcs = df_sales["PCS"].sum() + df_factory["PCS"].sum()
+        total_wt = df_sales["WT"].sum() + df_factory["WT"].sum()
+        st.subheader("📊 Overall Inventory Statistics")
+        col1, col2 = st.columns(2)
+        col1.metric("📦 Total Pieces", total_pcs)
+        col2.metric("⚖️ Total Weight", total_wt)
+    else:
+        st.warning("⚠️ No data available! Please check your Google Sheet link.")
 
 # Salesperson Inventory Page
 elif page == "Salesperson Inventory":
-    render_inventory_page("👨‍💼 Salesperson Inventory", salesperson_inventory)
+    st.title("🚛 Salesperson Inventory")
+    df_sales = load_data(SHEET_IDS["salesperson_inventory"])
+    if not df_sales.empty:
+        category_filter = st.selectbox("Filter by Category", df_sales['Category'].unique())
+        df_sales_filtered = df_sales[df_sales['Category'] == category_filter] if category_filter else df_sales
+        st.dataframe(df_sales_filtered)
+        st.download_button("📥 Download (Excel)", generate_excel(df_sales, "salesperson_inventory.xlsx"), "salesperson_inventory.xlsx")
+        st.download_button("📥 Download (PDF)", generate_pdf(df_sales), "salesperson_inventory.pdf")
+    else:
+        st.warning("⚠️ No data available!")
 
 # Factory Inventory Page
 elif page == "Factory Inventory":
-    render_inventory_page("🏭 Factory Inventory", factory_inventory)
-
-# Overall Inventory Page
-elif page == "Overall Inventory":
-    overall_inventory = pd.concat([salesperson_inventory, factory_inventory], ignore_index=True)
-    render_inventory_page("📦 Overall Inventory", overall_inventory)
+    st.title("🏭 Factory Inventory")
+    df_factory = load_data(SHEET_IDS["factory_inventory"])
+    if not df_factory.empty:
+        category_filter = st.selectbox("Filter by Category", df_factory['Category'].unique())
+        df_factory_filtered = df_factory[df_factory['Category'] == category_filter] if category_filter else df_factory
+        st.dataframe(df_factory_filtered)
+        st.download_button("📥 Download (Excel)", generate_excel(df_factory, "factory_inventory.xlsx"), "factory_inventory.xlsx")
+        st.download_button("📥 Download (PDF)", generate_pdf(df_factory), "factory_inventory.pdf")
+    else:
+        st.warning("⚠️ No data available!")
 
 # Aged Stock Page
 elif page == "Aged Stock":
-    st.title("📅 Aged Stock")
-    overall_inventory = pd.concat([salesperson_inventory, factory_inventory], ignore_index=True)
-    if 'DATE' in overall_inventory.columns:
-        days_threshold = st.slider("Select Aging Threshold (Days)", min_value=15, max_value=90, value=30, step=5)
-        aged_stock = overall_inventory[pd.Timestamp.today() - overall_inventory['DATE'] > pd.Timedelta(days=days_threshold)]
-        st.dataframe(aged_stock, use_container_width=True)
-    else:
-        st.warning("Date information not available.")
+    st.title("⏳ Aged Stock (More than 15 Days)")
+    df_sales = load_data(SHEET_IDS["salesperson_inventory"])
+    df_factory = load_data(SHEET_IDS["factory_inventory"])
 
-# PDF & Excel Reports (Placeholder)
-st.sidebar.subheader("📑 Generate Reports")
-report_type = st.sidebar.radio("Select Report Type", ["None", "PDF", "Excel"])
-if report_type == "PDF":
-    st.sidebar.write("🚀 PDF Report Generation Coming Soon!")
-elif report_type == "Excel":
-    st.sidebar.write("🚀 Excel Report Generation Coming Soon!")
+    if not df_sales.empty and not df_factory.empty:
+        st.subheader("🚛 Aged Stock (Salesperson Inventory)")
+        st.dataframe(get_aged_stock(df_sales))
+        st.subheader("🏭 Aged Stock (Factory Inventory)")
+        st.dataframe(get_aged_stock(df_factory))
+    else:
+        st.warning("⚠️ No data available!")
