@@ -90,6 +90,7 @@ if page == "Home":
     - 📊 **Dashboard:** View key inventory statistics.  
     - 🚛 **Salesperson Inventory:** Check stock assigned to salespersons.  
     - 🏭 **Factory Inventory:** Monitor stock available in the factory.  
+    - ⏳ **Aged Stock:** Track stock older than 15 days.  
     - 🔄 **Use the refresh button** to get the latest data.
     """)
 
@@ -108,89 +109,45 @@ elif page == "Dashboard":
         col1, col2 = st.columns(2)
         col1.metric("📦 Total Pieces", total_pcs)
         col2.metric("⚖️ Total Weight", total_wt)
-
-        # Salesperson Inventory Statistics
-        salesperson_pcs = df_sales["PCS"].sum()
-        salesperson_wt = df_sales["WT"].sum()
-        st.subheader("🚛 Salesperson Inventory Statistics")
-        col3, col4 = st.columns(2)
-        col3.metric("📦 Salesperson Pieces", salesperson_pcs)
-        col4.metric("⚖️ Salesperson Weight", salesperson_wt)
-
-        # Factory Inventory Statistics
-        factory_pcs = df_factory["PCS"].sum()
-        factory_wt = df_factory["WT"].sum()
-        st.subheader("🏭 Factory Inventory Statistics")
-        col5, col6 = st.columns(2)
-        col5.metric("📦 Factory Pieces", factory_pcs)
-        col6.metric("⚖️ Factory Weight", factory_wt)
-
-        # Salesperson vs Factory comparison
-        salesperson_stock = df_sales.groupby("Category")["PCS"].sum()
-        factory_stock = df_factory.groupby("Category")["PCS"].sum()
-        st.subheader("📊 Salesperson vs Factory Stock")
-        st.bar_chart([salesperson_stock, factory_stock], width=700)
-
-        # Visualization: Stock Distribution Over Time
-        st.subheader("📅 Stock Distribution Over Time")
-        combined_df = pd.concat([df_sales, df_factory])
-        st.line_chart(combined_df.groupby(combined_df["DATE"].dt.date)["PCS"].sum())
     else:
         st.warning("⚠️ No data available! Please check your Google Sheet link.")
 
 # Salesperson Inventory Page
 elif page == "Salesperson Inventory":
     st.title("🚛 Salesperson Inventory")
-
     df_sales = load_data(SHEET_IDS["salesperson_inventory"])
     if not df_sales.empty:
-        st.dataframe(df_sales)
-        
-        # Filter options for Category
         category_filter = st.selectbox("Filter by Category", df_sales['Category'].unique())
         df_sales_filtered = df_sales[df_sales['Category'] == category_filter] if category_filter else df_sales
         st.dataframe(df_sales_filtered)
-        
-        # Download buttons for Excel & PDF
-        st.download_button("📥 Download Salesperson Inventory (Excel)", generate_excel(df_sales, "salesperson_inventory.xlsx"), "salesperson_inventory.xlsx")
-        st.download_button("📥 Download Salesperson Inventory (PDF)", generate_pdf(df_sales), "salesperson_inventory.pdf")
+        st.download_button("📥 Download (Excel)", generate_excel(df_sales, "salesperson_inventory.xlsx"), "salesperson_inventory.xlsx")
+        st.download_button("📥 Download (PDF)", generate_pdf(df_sales), "salesperson_inventory.pdf")
     else:
         st.warning("⚠️ No data available!")
 
 # Factory Inventory Page
 elif page == "Factory Inventory":
     st.title("🏭 Factory Inventory")
-
     df_factory = load_data(SHEET_IDS["factory_inventory"])
     if not df_factory.empty:
-        st.dataframe(df_factory)
-        
-        # Filter options for Category
         category_filter = st.selectbox("Filter by Category", df_factory['Category'].unique())
         df_factory_filtered = df_factory[df_factory['Category'] == category_filter] if category_filter else df_factory
         st.dataframe(df_factory_filtered)
-        
-        # Download buttons for Excel & PDF
-        st.download_button("📥 Download Factory Inventory (Excel)", generate_excel(df_factory, "factory_inventory.xlsx"), "factory_inventory.xlsx")
-        st.download_button("📥 Download Factory Inventory (PDF)", generate_pdf(df_factory), "factory_inventory.pdf")
+        st.download_button("📥 Download (Excel)", generate_excel(df_factory, "factory_inventory.xlsx"), "factory_inventory.xlsx")
+        st.download_button("📥 Download (PDF)", generate_pdf(df_factory), "factory_inventory.pdf")
     else:
         st.warning("⚠️ No data available!")
 
 # Aged Stock Page
 elif page == "Aged Stock":
     st.title("⏳ Aged Stock (More than 15 Days)")
-
     df_sales = load_data(SHEET_IDS["salesperson_inventory"])
     df_factory = load_data(SHEET_IDS["factory_inventory"])
 
     if not df_sales.empty and not df_factory.empty:
-        # Calculate Aged Stock
-        salesperson_aged_stock = get_aged_stock(df_sales)
-        factory_aged_stock = get_aged_stock(df_factory)
-
         st.subheader("🚛 Aged Stock (Salesperson Inventory)")
-        st.dataframe(salesperson_aged_stock)
+        st.dataframe(get_aged_stock(df_sales))
         st.subheader("🏭 Aged Stock (Factory Inventory)")
-        st.dataframe(factory_aged_stock)
+        st.dataframe(get_aged_stock(df_factory))
     else:
         st.warning("⚠️ No data available!")
