@@ -28,6 +28,10 @@ def load_data(sheet_gid):
         url = GOOGLE_SHEET_URL + sheet_gid
         df = pd.read_csv(url)
         df['DATE'] = pd.to_datetime(df['DATE'], errors='coerce')  # Ensure DATE is datetime
+        
+        # Extract Category from Design No (e.g., CM-2973 -> Category: CM)
+        df['Category'] = df['DESIGN_NO'].apply(lambda x: str(x).split('-')[0] if pd.notnull(x) else '')
+        
         return df
     except Exception as e:
         st.error(f"Error loading data: {e}")
@@ -120,7 +124,7 @@ elif page == "Dashboard":
         col5, col6 = st.columns(2)
         col5.metric("📦 Factory Pieces", factory_pcs)
         col6.metric("⚖️ Factory Weight", factory_wt)
-        
+
         # Salesperson vs Factory comparison
         salesperson_stock = df_sales.groupby("Category")["PCS"].sum()
         factory_stock = df_factory.groupby("Category")["PCS"].sum()
@@ -142,12 +146,7 @@ elif page == "Salesperson Inventory":
     if not df_sales.empty:
         st.dataframe(df_sales)
         
-        # Search functionality
-        search_term = st.text_input("Search Inventory")
-        if search_term:
-            df_sales = df_sales[df_sales['Category'].str.contains(search_term, case=False, na=False)]
-        
-        # Filter options
+        # Filter options for Category
         category_filter = st.selectbox("Filter by Category", df_sales['Category'].unique())
         df_sales_filtered = df_sales[df_sales['Category'] == category_filter] if category_filter else df_sales
         st.dataframe(df_sales_filtered)
@@ -166,12 +165,7 @@ elif page == "Factory Inventory":
     if not df_factory.empty:
         st.dataframe(df_factory)
         
-        # Search functionality
-        search_term = st.text_input("Search Inventory")
-        if search_term:
-            df_factory = df_factory[df_factory['Category'].str.contains(search_term, case=False, na=False)]
-        
-        # Filter options
+        # Filter options for Category
         category_filter = st.selectbox("Filter by Category", df_factory['Category'].unique())
         df_factory_filtered = df_factory[df_factory['Category'] == category_filter] if category_filter else df_factory
         st.dataframe(df_factory_filtered)
@@ -194,12 +188,9 @@ elif page == "Aged Stock":
         salesperson_aged_stock = get_aged_stock(df_sales)
         factory_aged_stock = get_aged_stock(df_factory)
 
-        if not salesperson_aged_stock.empty:
-            st.subheader("🧑‍💼 Salesperson Aged Stock")
-            st.dataframe(salesperson_aged_stock)
-
-        if not factory_aged_stock.empty:
-            st.subheader("🏭 Factory Aged Stock")
-            st.dataframe(factory_aged_stock)
+        st.subheader("🚛 Aged Stock (Salesperson Inventory)")
+        st.dataframe(salesperson_aged_stock)
+        st.subheader("🏭 Aged Stock (Factory Inventory)")
+        st.dataframe(factory_aged_stock)
     else:
         st.warning("⚠️ No data available!")
