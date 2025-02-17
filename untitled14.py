@@ -109,6 +109,33 @@ elif page == "Dashboard":
         col1, col2 = st.columns(2)
         col1.metric("📦 Total Pieces", total_pcs)
         col2.metric("⚖️ Total Weight", total_wt)
+         # Salesperson Inventory Statistics
+        salesperson_pcs = df_sales["PCS"].sum()
+        salesperson_wt = df_sales["WT"].sum()
+        st.subheader("🚛 Salesperson Inventory Statistics")
+        col3, col4 = st.columns(2)
+        col3.metric("📦 Salesperson Pieces", salesperson_pcs)
+        col4.metric("⚖️ Salesperson Weight", salesperson_wt)
+
+        # Factory Inventory Statistics
+        factory_pcs = df_factory["PCS"].sum()
+        factory_wt = df_factory["WT"].sum()
+        st.subheader("🏭 Factory Inventory Statistics")
+        col5, col6 = st.columns(2)
+        col5.metric("📦 Factory Pieces", factory_pcs)
+        col6.metric("⚖️ Factory Weight", factory_wt)
+        
+        # Bar Chart - Overall Inventory Categories by Weight
+        overall_inventory = pd.concat([salesperson_inventory, factory_inventory])
+        category_weight = overall_inventory.groupby("Category")["WEIGHT"].sum().reset_index()
+        fig = px.bar(category_weight, x='Category', y='WEIGHT', title='Overall Inventory Categories by Weight', color='Category')
+        st.plotly_chart(fig)
+
+        # Visualization: Stock Distribution Over Time
+        st.subheader("📅 Stock Distribution Over Time")
+        combined_df = pd.concat([df_sales, df_factory])
+        st.line_chart(combined_df.groupby(combined_df["DATE"].dt.date)["PCS"].sum())
+    
     else:
         st.warning("⚠️ No data available! Please check your Google Sheet link.")
 
