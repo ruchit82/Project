@@ -59,10 +59,29 @@ elif page == "Dashboard":
     df_factory = load_data(SHEET_IDS["factory_inventory"])
 
     if not df_sales.empty and not df_factory.empty:
+        # Overall Inventory Statistics
         total_pcs = df_sales["PCS"].sum() + df_factory["PCS"].sum()
         total_wt = df_sales["WT"].sum() + df_factory["WT"].sum()
-        st.metric("📦 Total Pieces", total_pcs)
-        st.metric("⚖️ Total Weight", total_wt)
+        st.subheader("📊 Overall Inventory Statistics")
+        col1, col2 = st.columns(2)
+        col1.metric("📦 Total Pieces", total_pcs)
+        col2.metric("⚖️ Total Weight", total_wt)
+
+        # Salesperson Inventory Statistics
+        salesperson_pcs = df_sales["PCS"].sum()
+        salesperson_wt = df_sales["WT"].sum()
+        st.subheader("🚛 Salesperson Inventory Statistics")
+        col3, col4 = st.columns(2)
+        col3.metric("📦 Salesperson Pieces", salesperson_pcs)
+        col4.metric("⚖️ Salesperson Weight", salesperson_wt)
+
+        # Factory Inventory Statistics
+        factory_pcs = df_factory["PCS"].sum()
+        factory_wt = df_factory["WT"].sum()
+        st.subheader("🏭 Factory Inventory Statistics")
+        col5, col6 = st.columns(2)
+        col5.metric("📦 Factory Pieces", factory_pcs)
+        col6.metric("⚖️ Factory Weight", factory_wt)
 
         # Visualization: Stock Distribution Over Time
         st.subheader("📅 Stock Distribution Over Time")
