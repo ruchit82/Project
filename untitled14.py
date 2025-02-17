@@ -34,7 +34,7 @@ def load_data(sheet_gid):
 
 # App Title and Sidebar Navigation
 st.sidebar.title("📊 Inventory App")
-page = st.sidebar.radio("🔍 Navigate to", ["Home", "Dashboard", "Salesperson Inventory", "Factory Inventory"])
+page = st.sidebar.radio("🔍 Navigate to", ["Home", "Dashboard", "Salesperson Inventory", "Factory Inventory","Aged Stock"])
 
 # Refresh Button (To Reload Data)
 if st.sidebar.button("🔄 Refresh Data"):
@@ -82,6 +82,12 @@ elif page == "Dashboard":
         col5, col6 = st.columns(2)
         col5.metric("📦 Factory Pieces", factory_pcs)
         col6.metric("⚖️ Factory Weight", factory_wt)
+        
+        # Salesperson vs Factory comparison
+        salesperson_stock = salesperson_df.groupby("Category")["PCS"].sum()
+        factory_stock = factory_df.groupby("Category")["PCS"].sum()
+        st.subheader("📊 Salesperson vs Factory Stock")
+        st.bar_chart([salesperson_stock, factory_stock], width=700)
 
         # Visualization: Stock Distribution Over Time
         st.subheader("📅 Stock Distribution Over Time")
@@ -109,5 +115,22 @@ elif page == "Factory Inventory":
     if not df_factory.empty:
         st.dataframe(df_factory)
         st.download_button("📥 Download Factory Inventory", df_factory.to_csv(index=False), "factory_inventory.csv")
+    else:
+        st.warning("⚠️ No data available!")
+# Aged Stock Page
+elif page == "Aged Stock":
+    st.title("⏳ Aged Stock (More than 15 Days)")
+    
+    if not salesperson_df.empty and not factory_df.empty:
+        salesperson_aged_stock = get_aged_stock(salesperson_df)
+        factory_aged_stock = get_aged_stock(factory_df)
+
+        if not salesperson_aged_stock.empty:
+            st.subheader("🧑‍💼 Salesperson Aged Stock")
+            st.dataframe(salesperson_aged_stock)
+
+        if not factory_aged_stock.empty:
+            st.subheader("🏭 Factory Aged Stock")
+            st.dataframe(factory_aged_stock)
     else:
         st.warning("⚠️ No data available!")
