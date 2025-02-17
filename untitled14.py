@@ -111,6 +111,21 @@ elif page == "Dashboard":
         col1, col2 = st.columns(2)
         col1.metric("📦 Total Pieces", total_pcs)
         col2.metric("⚖️ Total Weight", total_wt)
+     # Salesperson Statistics
+        sales_pcs = sales_df["PCS"].sum()
+        sales_wt = sales_df["WT"].sum()
+        st.subheader("🧑‍💼 Salesperson Inventory Statistics")
+        col3, col4 = st.columns(2)
+        col3.metric("📦 Total Pieces (Salesperson)", sales_pcs)
+        col4.metric("⚖️ Total Weight (Salesperson)", sales_wt)
+ 
+        # Factory Inventory Statistics
+        factory_pcs = factory_df["PCS"].sum()
+        factory_wt = factory_df["WT"].sum()
+        st.subheader("🏭 Factory Inventory Statistics")
+        col5, col6 = st.columns(2)
+        col5.metric("📦 Total Pieces (Factory)", factory_pcs)
+        col6.metric("⚖️ Total Weight (Factory)", factory_wt)
     else:
         st.warning("⚠️ No data available! Please check your Google Sheet link.")
 
