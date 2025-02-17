@@ -126,8 +126,8 @@ elif page == "Dashboard":
         col6.metric("⚖️ Factory Weight", factory_wt)
 
         # Salesperson vs Factory comparison
-        salesperson_stock = df_sales.groupby("DESIGN NO")["PCS"].sum()
-        factory_stock = df_factory.groupby("DESIGN NO")["PCS"].sum()
+        salesperson_stock = df_sales.groupby("Category")["PCS"].sum()
+        factory_stock = df_factory.groupby("Category")["PCS"].sum()
         st.subheader("📊 Salesperson vs Factory Stock")
         st.bar_chart([salesperson_stock, factory_stock], width=700)
 
@@ -146,9 +146,9 @@ elif page == "Salesperson Inventory":
     if not df_sales.empty:
         st.dataframe(df_sales)
         
-        # Filter options for DESIGN NO
-        DESIGN_NO_filter = st.selectbox("Filter by DESIGN NO", df_sales['DESIGN NO'].unique())
-        df_sales_filtered = df_sales[df_sales['DESIGN NO'] == DESIGN_NO_filter] if DESIGN NO_filter else df_sales
+        # Filter options for Category
+        category_filter = st.selectbox("Filter by Category", df_sales['Category'].unique())
+        df_sales_filtered = df_sales[df_sales['Category'] == category_filter] if category_filter else df_sales
         st.dataframe(df_sales_filtered)
         
         # Download buttons for Excel & PDF
@@ -165,9 +165,9 @@ elif page == "Factory Inventory":
     if not df_factory.empty:
         st.dataframe(df_factory)
         
-        # Filter options for DESIGN NO
-        DESIGN_NO_filter = st.selectbox("Filter by DESIGN NO", df_factory['DESIGN NO'].unique())
-        df_factory_filtered = df_factory[df_factory['DESIGN NO'] == DESIGN_NO_filter] if DESIGN NO_filter else df_factory
+        # Filter options for Category
+        category_filter = st.selectbox("Filter by Category", df_factory['Category'].unique())
+        df_factory_filtered = df_factory[df_factory['Category'] == category_filter] if category_filter else df_factory
         st.dataframe(df_factory_filtered)
         
         # Download buttons for Excel & PDF
@@ -194,4 +194,3 @@ elif page == "Aged Stock":
         st.dataframe(factory_aged_stock)
     else:
         st.warning("⚠️ No data available!")
-
