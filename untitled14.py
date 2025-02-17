@@ -50,7 +50,6 @@ if page == "Home":
     - 🏭 **Factory Inventory:** Monitor stock available in the factory.  
     - 🔄 **Use the refresh button** to get the latest data.
     """)
-
 # Dashboard Page
 elif page == "Dashboard":
     st.title("📈 Stock Inventory Dashboard")
@@ -59,34 +58,47 @@ elif page == "Dashboard":
     df_factory = load_data(SHEET_IDS["factory_inventory"])
 
     if not df_sales.empty and not df_factory.empty:
+        # Merge Both DataFrames
+        combined_df = pd.concat([df_sales, df_factory])
+
         # Overall Inventory Statistics
-        total_wt = df_sales["WT"].sum() + df_factory["WT"].sum()
-        total_pcs = df_sales["PCS"].sum() + df_factory["PCS"].sum()
+        total_pcs = combined_df["PCS"].sum()
+        total_wt = combined_df["WT"].sum()
         st.subheader("📊 Overall Inventory Statistics")
         col1, col2 = st.columns(2)
-        col1.metric("⚖️ Total Weight", total_wt)
-        col2.metric("📦 Total Pieces", total_pcs)
+        col1.metric("📦 Total Pieces", total_pcs)
+        col2.metric("⚖️ Total Weight", total_wt)
 
         # Salesperson Inventory Statistics
-        salesperson_wt = df_sales["WT"].sum()
         salesperson_pcs = df_sales["PCS"].sum()
+        salesperson_wt = df_sales["WT"].sum()
         st.subheader("🚛 Salesperson Inventory Statistics")
         col3, col4 = st.columns(2)
-        col3.metric("⚖️ Salesperson Weight", salesperson_wt)
-        col4.metric("📦 Salesperson Pieces", salesperson_pcs)
+        col3.metric("📦 Salesperson Pieces", salesperson_pcs)
+        col4.metric("⚖️ Salesperson Weight", salesperson_wt)
 
-        # Factory Inventory Statistics 
-        factory_wt = df_factory["WT"].sum()
+        # Factory Inventory Statistics
         factory_pcs = df_factory["PCS"].sum()
+        factory_wt = df_factory["WT"].sum()
         st.subheader("🏭 Factory Inventory Statistics")
         col5, col6 = st.columns(2)
-        col5.metric("⚖️ Factory Weight", factory_wt)
-        col6.metric("📦 Factory Pieces", factory_pcs)
+        col5.metric("📦 Factory Pieces", factory_pcs)
+        col6.metric("⚖️ Factory Weight", factory_wt)
+
+        # Extract Category from Design No.
+        combined_df["Category"] = combined_df["DESIGN NO."].str.replace(r"[-\d]", "", regex=True)
+
+        # Group by Category (Total Pieces)
+        category_stats = combined_df.groupby("Category")["PCS"].sum().reset_index()
+
+        # Visualization: Stock Distribution by Category
+        st.subheader("📊 Stock Distribution by Category")
+        st.bar_chart(category_stats.set_index("Category"))
 
         # Visualization: Stock Distribution Over Time
         st.subheader("📅 Stock Distribution Over Time")
-        combined_df = pd.concat([df_sales, df_factory])
         st.line_chart(combined_df.groupby(combined_df["DATE"].dt.date)["PCS"].sum())
+
     else:
         st.warning("⚠️ No data available! Please check your Google Sheet link.")
 
