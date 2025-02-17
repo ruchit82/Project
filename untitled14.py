@@ -26,11 +26,34 @@ def load_data(sheet_url):
         st.error(f"Error loading data: {e}")
         return pd.DataFrame()
 
-# Google Sheet URLs (Replace with actual Google Sheet links)
-SHEET_IDS = {
-    "salesperson_inventory": "https://docs.google.com/spreadsheets/d/your_salesperson_inventory_sheet_url/export?format=csv",
-    "factory_inventory": "https://docs.google.com/spreadsheets/d/your_factory_inventory_sheet_url/export?format=csv"
-}
+# Google Sheets Direct CSV URLs
+SALES_PERSON_URL = "https://docs.google.com/spreadsheets/d/1Jwx4TntDxlwghFn_eC_NgooXlpvR6WTDdvWy4PO0zgk/gviz/tq?tqx=out:csv&gid=2076018430"
+FACTORY_INVENTORY_URL = "https://docs.google.com/spreadsheets/d/1Jwx4TntDxlwghFn_eC_NgooXlpvR6WTDdvWy4PO0zgk/gviz/tq?tqx=out:csv&gid=0"
+ 
+# Function to Load Data from Google Sheets
+@st.cache_data
+def load_data():
+    try:
+        sales_df = pd.read_csv(SALES_PERSON_URL)
+        factory_df = pd.read_csv(FACTORY_INVENTORY_URL)
+ 
+        # Convert column names to uppercase and strip spaces
+        sales_df.columns = sales_df.columns.str.strip().str.upper()
+        factory_df.columns = factory_df.columns.str.strip().str.upper()
+ 
+        # Convert DATE column to datetime format
+        if "DATE" in sales_df.columns:
+            sales_df["DATE"] = pd.to_datetime(sales_df["DATE"], errors="coerce")
+        if "DATE" in factory_df.columns:
+            factory_df["DATE"] = pd.to_datetime(factory_df["DATE"], errors="coerce")
+ 
+        return sales_df, factory_df
+    except Exception as e:
+        st.error(f"Error loading data: {e}")
+        return pd.DataFrame(), pd.DataFrame()
+ 
+# Load Data
+sales_df, factory_df = load_data()
 
 # Load Data
 df_sales = load_data(SHEET_IDS["salesperson_inventory"])
