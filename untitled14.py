@@ -10,127 +10,156 @@ https://colab.research.google.com/drive/1aHPwHTOHyDChtT8tTnmoHPKD_f39w-iK
 # -*- coding: utf-8 -*-
 import streamlit as st
 import pandas as pd
-import datetime
-import requests
- 
-# Google Sheets Direct CSV URLs
-SALES_PERSON_URL = "https://docs.google.com/spreadsheets/d/1Jwx4TntDxlwghFn_eC_NgooXlpvR6WTDdvWy4PO0zgk/gviz/tq?tqx=out:csv&gid=2076018430"
-FACTORY_INVENTORY_URL = "https://docs.google.com/spreadsheets/d/1Jwx4TntDxlwghFn_eC_NgooXlpvR6WTDdvWy4PO0zgk/gviz/tq?tqx=out:csv&gid=0"
- 
-# Function to Load Data from Google Sheets
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Set up Streamlit app
+st.set_page_config(page_title="Inventory Management", page_icon="📊", layout="wide")
+
+# Function to load data from Google Sheets
 @st.cache_data
-def load_data():
+def load_data(sheet_url):
     try:
-        sales_df = pd.read_csv(SALES_PERSON_URL)
-        factory_df = pd.read_csv(FACTORY_INVENTORY_URL)
- 
-        # Convert column names to uppercase and strip spaces
-        sales_df.columns = sales_df.columns.str.strip().str.upper()
-        factory_df.columns = factory_df.columns.str.strip().str.upper()
- 
-        # Convert DATE column to datetime format
-        if "DATE" in sales_df.columns:
-            sales_df["DATE"] = pd.to_datetime(sales_df["DATE"], errors="coerce")
-        if "DATE" in factory_df.columns:
-            factory_df["DATE"] = pd.to_datetime(factory_df["DATE"], errors="coerce")
- 
-        return sales_df, factory_df
+        df = pd.read_csv(sheet_url)
+        return df
     except Exception as e:
         st.error(f"Error loading data: {e}")
-        return pd.DataFrame(), pd.DataFrame()
- 
+        return pd.DataFrame()
+
+# Google Sheet URLs (Replace with actual Google Sheet links)
+SHEET_IDS = {
+    "salesperson_inventory": "https://docs.google.com/spreadsheets/d/your_salesperson_inventory_sheet_url/export?format=csv",
+    "factory_inventory": "https://docs.google.com/spreadsheets/d/your_factory_inventory_sheet_url/export?format=csv"
+}
+
 # Load Data
-sales_df, factory_df = load_data()
- 
-# Refresh Button
-if st.sidebar.button("🔄 Refresh Data"):
-    st.cache_data.clear()
-    sales_df, factory_df = load_data()
-    st.experimental_rerun()
- 
-# Sidebar Navigation
-st.sidebar.title("📊 Inventory App")
-page = st.sidebar.radio("🔍 Navigate to", ["Home", "Dashboard", "Salesperson Inventory", "Factory Inventory"])
- 
-# Home Page
-if page == "Home":
-    st.title("🏠 Welcome to the Inventory Management App")
-    st.write("""
-    This app provides an overview of stock inventory, including salesperson and factory data.
-    - 📈 View **Dashboard** for statistics and trends.
-    - 🏢 View **Salesperson Inventory** for individual stock.
-    - 🏭 View **Factory Inventory** for warehouse stock.
-    - 🔄 Click **Refresh Data** to get the latest information.
-    """)
- 
-# Dashboard Page
-elif page == "Dashboard":
-    st.title("📈 Stock Inventory Dashboard")
- 
-    if not sales_df.empty and not factory_df.empty:
-        # Combine both inventories
-        combined_df = pd.concat([sales_df, factory_df])
- 
-        # Overall Statistics
-        total_pcs = combined_df["PCS"].sum()
-        total_wt = combined_df["WT"].sum()
-        st.subheader("📊 Overall Stock Statistics")
-        col1, col2 = st.columns(2)
-        col1.metric("📦 Total Pieces", total_pcs)
-        col2.metric("⚖️ Total Weight", total_wt)
- 
-        # Salesperson Statistics
-        sales_pcs = sales_df["PCS"].sum()
-        sales_wt = sales_df["WT"].sum()
-        st.subheader("🧑‍💼 Salesperson Inventory Statistics")
-        col3, col4 = st.columns(2)
-        col3.metric("📦 Total Pieces (Salesperson)", sales_pcs)
-        col4.metric("⚖️ Total Weight (Salesperson)", sales_wt)
- 
-        # Factory Inventory Statistics
-        factory_pcs = factory_df["PCS"].sum()
-        factory_wt = factory_df["WT"].sum()
-        st.subheader("🏭 Factory Inventory Statistics")
-        col5, col6 = st.columns(2)
-        col5.metric("📦 Total Pieces (Factory)", factory_pcs)
-        col6.metric("⚖️ Total Weight (Factory)", factory_wt)
- 
-        # Stock Distribution Over Time
-        st.subheader("📅 Stock Distribution Over Time")
-        st.line_chart(combined_df.groupby(combined_df["DATE"].dt.date)["PCS"].sum())
- 
-        # Extract Category from DESIGN NO.
-        if "DESIGN NO." in combined_df.columns:
-            combined_df["Category"] = combined_df["DESIGN NO."].astype(str).str.replace(r"[-\d]", "", regex=True)
- 
-            # Group by Category
-            category_stats = combined_df.groupby("Category")["PCS"].sum().reset_index()
- 
-            # Visualization: Stock Distribution by Category
-            st.subheader("📊 Stock Distribution by Category")
-            st.bar_chart(category_stats.set_index("Category"))
-        else:
-            st.warning("⚠️ 'DESIGN NO.' column not found! Please check Google Sheet format.")
- 
+df_sales = load_data(SHEET_IDS["salesperson_inventory"])
+df_factory = load_data(SHEET_IDS["factory_inventory"])
+
+# Add 'Category' Column (Extracted from 'DESIGN NO')
+for df in [df_sales, df_factory]:
+    if "DESIGN NO" in df.columns:
+        df["Category"] = df["DESIGN NO"].astype(str).str.split("-").str[0]  # Extracts first part before '-'
+
+# Sidebar for navigation
+st.sidebar.title("📌 Navigation")
+page = st.sidebar.radio("Go to", ["Dashboard", "Salesperson Inventory", "Factory Inventory", "Overall Inventory", "Aged Stock", "Generate Reports"])
+
+# 📊 **Dashboard**
+if page == "Dashboard":
+    st.title("📊 Inventory Dashboard")
+
+    if not df_sales.empty and not df_factory.empty:
+        df_overall = pd.concat([df_sales, df_factory], ignore_index=True)
+
+        st.subheader("📌 Overall Inventory Categories by Weight")
+        category_weight = df_overall.groupby("Category")["WEIGHT"].sum().sort_values(ascending=False)
+
+        fig, ax = plt.subplots(figsize=(10, 5))
+        category_weight.plot(kind="bar", color="skyblue", ax=ax)
+        ax.set_ylabel("Total Weight")
+        ax.set_xlabel("Category")
+        ax.set_title("Total Weight by Category")
+        st.pyplot(fig)
     else:
-        st.warning("⚠️ No data available! Please refresh.")
- 
-# Salesperson Inventory Page
+        st.warning("⚠️ No data available! Please check your Google Sheets.")
+
+# 🚛 **Salesperson Inventory**
 elif page == "Salesperson Inventory":
-    st.title("🧑‍💼 Salesperson Inventory Data")
- 
-    if not sales_df.empty:
-        st.dataframe(sales_df)
-        st.download_button("📥 Download Salesperson Data", sales_df.to_csv(index=False), "salesperson_inventory.csv")
+    st.title("🚛 Salesperson Inventory")
+
+    if not df_sales.empty:
+        st.subheader("🔍 Search & Filter Inventory")
+        col1, col2 = st.columns(2)
+        category_filter = col1.selectbox("Filter by Category", ["All"] + list(df_sales["Category"].unique()))
+        design_search = col2.text_input("Search by Design No")
+
+        # Apply filters
+        if category_filter != "All":
+            df_sales = df_sales[df_sales["Category"] == category_filter]
+        if design_search:
+            df_sales = df_sales[df_sales["DESIGN NO"].astype(str).str.contains(design_search, case=False, na=False)]
+
+        st.subheader("📋 Salesperson Inventory Data")
+        st.dataframe(df_sales)
     else:
         st.warning("⚠️ No data available!")
- 
-# Factory Inventory Page
+
+# 🏭 **Factory Inventory**
 elif page == "Factory Inventory":
-    st.title("🏭 Factory Inventory Data")
- 
-    if not factory_df.empty:
-        st.dataframe(factory_df)
-        st.download_button("📥 Download Factory Inventory Data", factory_df.to_csv(index=False), "factory_inventory.csv")
+    st.title("🏭 Factory Inventory")
+
+    if not df_factory.empty:
+        st.subheader("🔍 Search & Filter Inventory")
+        col1, col2 = st.columns(2)
+        category_filter = col1.selectbox("Filter by Category", ["All"] + list(df_factory["Category"].unique()))
+        design_search = col2.text_input("Search by Design No")
+
+        # Apply filters
+        if category_filter != "All":
+            df_factory = df_factory[df_factory["Category"] == category_filter]
+        if design_search:
+            df_factory = df_factory[df_factory["DESIGN NO"].astype(str).str.contains(design_search, case=False, na=False)]
+
+        st.subheader("📋 Factory Inventory Data")
+        st.dataframe(df_factory)
+    else:
+        st.warning("⚠️ No data available!")
+
+# 📦 **Overall Inventory**
+elif page == "Overall Inventory":
+    st.title("📦 Overall Inventory")
+
+    if not df_sales.empty and not df_factory.empty:
+        df_overall = pd.concat([df_sales, df_factory], ignore_index=True)
+
+        st.subheader("🔍 Search & Filter Inventory")
+        col1, col2 = st.columns(2)
+        category_filter = col1.selectbox("Filter by Category", ["All"] + list(df_overall["Category"].unique()))
+        design_search = col2.text_input("Search by Design No")
+
+        # Apply filters
+        if category_filter != "All":
+            df_overall = df_overall[df_overall["Category"] == category_filter]
+        if design_search:
+            df_overall = df_overall[df_overall["DESIGN NO"].astype(str).str.contains(design_search, case=False, na=False)]
+
+        st.subheader("📋 Overall Inventory Data")
+        st.dataframe(df_overall)
+    else:
+        st.warning("⚠️ No data available!")
+
+# ⏳ **Aged Stock**
+elif page == "Aged Stock":
+    st.title("⏳ Aged Stock")
+
+    if not df_sales.empty and not df_factory.empty:
+        df_overall = pd.concat([df_sales, df_factory], ignore_index=True)
+
+        # Calculate Aged Stock
+        df_overall["DATE"] = pd.to_datetime(df_overall["DATE"], errors="coerce")
+        df_overall["Age (Days)"] = (pd.Timestamp.today() - df_overall["DATE"]).dt.days
+
+        st.subheader("📋 Aged Stock Data")
+        st.dataframe(df_overall[df_overall["Age (Days)"] > 180])  # Show items older than 180 days
+    else:
+        st.warning("⚠️ No data available!")
+
+# 📄 **Generate Reports (PDF & Excel)**
+elif page == "Generate Reports":
+    st.title("📄 Generate Reports")
+
+    if not df_sales.empty and not df_factory.empty:
+        df_overall = pd.concat([df_sales, df_factory], ignore_index=True)
+
+        # Convert to Excel
+        st.subheader("📥 Download Excel Report")
+        excel_data = df_overall.to_csv(index=False).encode("utf-8")
+        st.download_button(label="📥 Download Excel", data=excel_data, file_name="inventory_report.csv", mime="text/csv")
+
+        # Convert to PDF
+        st.subheader("📥 Download PDF Report")
+        pdf_data = df_overall.to_string()
+        st.download_button(label="📥 Download PDF", data=pdf_data, file_name="inventory_report.pdf", mime="text/plain")
     else:
         st.warning("⚠️ No data available!")
