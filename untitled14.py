@@ -147,8 +147,8 @@ elif page == "Salesperson Inventory":
         st.dataframe(df_sales)
         
         # Filter options for DESIGN NO
-        DESIGN NO_filter = st.selectbox("Filter by DESIGN NO", df_sales['DESIGN NO'].unique())
-        df_sales_filtered = df_sales[df_sales['DESIGN NO'] == DESIGN NO_filter] if DESIGN NO_filter else df_sales
+        DESIGN_NO_filter = st.selectbox("Filter by DESIGN NO", df_sales['DESIGN NO'].unique())
+        df_sales_filtered = df_sales[df_sales['DESIGN NO'] == DESIGN_NO_filter] if DESIGN NO_filter else df_sales
         st.dataframe(df_sales_filtered)
         
         # Download buttons for Excel & PDF
@@ -166,8 +166,8 @@ elif page == "Factory Inventory":
         st.dataframe(df_factory)
         
         # Filter options for DESIGN NO
-        DESIGN NO_filter = st.selectbox("Filter by DESIGN NO", df_factory['Category'].unique())
-        df_factory_filtered = df_factory[df_factory['DESIGN NO'] == DESIGN NO_filter] if DESIGN NO_filter else df_factory
+        DESIGN_NO_filter = st.selectbox("Filter by DESIGN NO", df_factory['DESIGN NO'].unique())
+        df_factory_filtered = df_factory[df_factory['DESIGN NO'] == DESIGN_NO_filter] if DESIGN NO_filter else df_factory
         st.dataframe(df_factory_filtered)
         
         # Download buttons for Excel & PDF
