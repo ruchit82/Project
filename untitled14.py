@@ -10,6 +10,8 @@ import streamlit as st
 import pandas as pd
 import datetime
 import requests
+from io import BytesIO
+from fpdf import FPDF
 
 # Google Sheets Information
 GOOGLE_SHEET_URL = "https://docs.google.com/spreadsheets/d/1Jwx4TntDxlwghFn_eC_NgooXlpvR6WTDdvWy4PO0zgk/export?format=csv&gid="
@@ -36,6 +38,37 @@ def get_aged_stock(df):
     today = datetime.date.today()
     aged_stock = df[df['DATE'].dt.date < (today - datetime.timedelta(days=15))]
     return aged_stock
+
+# Function to generate Excel report
+def generate_excel(df, file_name):
+    buffer = BytesIO()
+    with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
+        df.to_excel(writer, index=False, sheet_name="Inventory")
+    buffer.seek(0)
+    return buffer
+
+# Function to generate PDF report
+def generate_pdf(df):
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_font("Arial", size=12)
+    
+    pdf.cell(200, 10, txt="Inventory Report", ln=True, align="C")
+    
+    # Add the column names as header
+    pdf.ln(10)
+    pdf.set_font("Arial", size=10)
+    for col in df.columns:
+        pdf.cell(30, 10, col, border=1)
+    pdf.ln(10)
+    
+    # Add rows
+    for _, row in df.iterrows():
+        for value in row:
+            pdf.cell(30, 10, str(value), border=1)
+        pdf.ln(10)
+    
+    return pdf.output(dest='S')
 
 # App Title and Sidebar Navigation
 st.sidebar.title("📊 Inventory App")
@@ -108,7 +141,20 @@ elif page == "Salesperson Inventory":
     df_sales = load_data(SHEET_IDS["salesperson_inventory"])
     if not df_sales.empty:
         st.dataframe(df_sales)
-        st.download_button("📥 Download Salesperson Inventory", df_sales.to_csv(index=False), "salesperson_inventory.csv")
+        
+        # Search functionality
+        search_term = st.text_input("Search Inventory")
+        if search_term:
+            df_sales = df_sales[df_sales['Category'].str.contains(search_term, case=False, na=False)]
+        
+        # Filter options
+        category_filter = st.selectbox("Filter by Category", df_sales['Category'].unique())
+        df_sales_filtered = df_sales[df_sales['Category'] == category_filter] if category_filter else df_sales
+        st.dataframe(df_sales_filtered)
+        
+        # Download buttons for Excel & PDF
+        st.download_button("📥 Download Salesperson Inventory (Excel)", generate_excel(df_sales, "salesperson_inventory.xlsx"), "salesperson_inventory.xlsx")
+        st.download_button("📥 Download Salesperson Inventory (PDF)", generate_pdf(df_sales), "salesperson_inventory.pdf")
     else:
         st.warning("⚠️ No data available!")
 
@@ -119,7 +165,20 @@ elif page == "Factory Inventory":
     df_factory = load_data(SHEET_IDS["factory_inventory"])
     if not df_factory.empty:
         st.dataframe(df_factory)
-        st.download_button("📥 Download Factory Inventory", df_factory.to_csv(index=False), "factory_inventory.csv")
+        
+        # Search functionality
+        search_term = st.text_input("Search Inventory")
+        if search_term:
+            df_factory = df_factory[df_factory['Category'].str.contains(search_term, case=False, na=False)]
+        
+        # Filter options
+        category_filter = st.selectbox("Filter by Category", df_factory['Category'].unique())
+        df_factory_filtered = df_factory[df_factory['Category'] == category_filter] if category_filter else df_factory
+        st.dataframe(df_factory_filtered)
+        
+        # Download buttons for Excel & PDF
+        st.download_button("📥 Download Factory Inventory (Excel)", generate_excel(df_factory, "factory_inventory.xlsx"), "factory_inventory.xlsx")
+        st.download_button("📥 Download Factory Inventory (PDF)", generate_pdf(df_factory), "factory_inventory.pdf")
     else:
         st.warning("⚠️ No data available!")
 
@@ -131,6 +190,7 @@ elif page == "Aged Stock":
     df_factory = load_data(SHEET_IDS["factory_inventory"])
 
     if not df_sales.empty and not df_factory.empty:
+        # Calculate Aged Stock
         salesperson_aged_stock = get_aged_stock(df_sales)
         factory_aged_stock = get_aged_stock(df_factory)
 
