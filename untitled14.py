@@ -125,20 +125,17 @@ def render_inventory_page(title, inventory_data):
     
     st.dataframe(filtered_data, use_container_width=True)
 
-# Salesperson Inventory Page
+# Ensure `elif` statements are correctly placed
 elif page == "Salesperson Inventory":
     render_inventory_page("👨‍💼 Salesperson Inventory", salesperson_inventory)
 
-# Factory Inventory Page
 elif page == "Factory Inventory":
     render_inventory_page("🏭 Factory Inventory", factory_inventory)
 
-# Overall Inventory Page
 elif page == "Overall Inventory":
     overall_inventory = pd.concat([salesperson_inventory, factory_inventory], ignore_index=True)
     render_inventory_page("📦 Overall Inventory", overall_inventory)
 
-# Aged Stock Page
 elif page == "Aged Stock":
     st.title("📅 Aged Stock")
     overall_inventory = pd.concat([salesperson_inventory, factory_inventory], ignore_index=True)
@@ -156,3 +153,4 @@ if report_type == "PDF":
     st.sidebar.write("🚀 PDF Report Generation Coming Soon!")
 elif report_type == "Excel":
     st.sidebar.write("🚀 Excel Report Generation Coming Soon!")
+
