@@ -47,7 +47,7 @@ factory_inventory = load_data(SHEET_IDS['factory_inventory'])
 
 # Sidebar Navigation
 st.sidebar.title("📦 Inventory Management")
-page = st.sidebar.radio("Navigation", ["Home", "Dashboard", "Salesperson Inventory", "Factory Inventory", "Overall Inventory", "Aged Stock"])
+page = st.sidebar.radio("Navigation", ["Home", "Dashboard", "Salesperson Inventory", "Factory Inventory", "Overall Inventory", "Aged Stock"]).strip()
 
 # Home Page
 if page == "Home":
