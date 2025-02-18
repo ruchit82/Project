@@ -9,6 +9,7 @@ https://colab.research.google.com/drive/1aHPwHTOHyDChtT8tTnmoHPKD_f39w-iK
 """
 # -*- coding: utf-8 -*-
 # -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 import streamlit as st
 import pandas as pd
 import plotly.express as px
@@ -72,8 +73,8 @@ elif page == "Dashboard":
         # Overall Inventory Statistics
         total_pcs = df_sales["PCS"].sum() if "PCS" in df_sales.columns else 0
         total_pcs += df_factory["PCS"].sum() if "PCS" in df_factory.columns else 0
-        total_wt = df_sales["WEIGHT"].sum() if "WEIGHT" in df_sales.columns else 0
-        total_wt += df_factory["WEIGHT"].sum() if "WEIGHT" in df_factory.columns else 0
+        total_wt = df_sales["WT"].sum() if "WT" in df_sales.columns else 0
+        total_wt += df_factory["WT"].sum() if "WT" in df_factory.columns else 0
         st.subheader("📊 Overall Inventory Statistics")
         col1, col2 = st.columns(2)
         col1.metric("📦 Total Pieces", total_pcs)
@@ -81,7 +82,7 @@ elif page == "Dashboard":
      
         # Salesperson Statistics
         sales_pcs = df_sales["PCS"].sum() if "PCS" in df_sales.columns else 0
-        sales_wt = df_sales["WEIGHT"].sum() if "WEIGHT" in df_sales.columns else 0
+        sales_wt = df_sales["WT"].sum() if "WT" in df_sales.columns else 0
         st.subheader("🧑‍💼 Salesperson Inventory Statistics")
         col3, col4 = st.columns(2)
         col3.metric("📦 Total Pieces (Salesperson)", sales_pcs)
@@ -89,7 +90,7 @@ elif page == "Dashboard":
      
         # Factory Inventory Statistics
         factory_pcs = df_factory["PCS"].sum() if "PCS" in df_factory.columns else 0
-        factory_wt = df_factory["WEIGHT"].sum() if "WEIGHT" in df_factory.columns else 0
+        factory_wt = df_factory["WT"].sum() if "WT" in df_factory.columns else 0
         st.subheader("🏭 Factory Inventory Statistics")
         col5, col6 = st.columns(2)
         col5.metric("📦 Total Pieces (Factory)", factory_pcs)
@@ -98,11 +99,11 @@ elif page == "Dashboard":
         # New Bar Chart: Overall Inventory Categories by Weight
         st.subheader("📊 Overall Inventory Categories by Weight")
         combined_df = pd.concat([df_sales, df_factory], ignore_index=True)
-        if "Category" in combined_df.columns and "WEIGHT" in combined_df.columns:
-            category_wt = combined_df.groupby("Category")["WEIGHT"].sum().sort_values(ascending=False)
+        if "Category" in combined_df.columns and "WT" in combined_df.columns:
+            category_wt = combined_df.groupby("Category")["WT"].sum().sort_values(ascending=False)
             st.bar_chart(category_wt)
         else:
-            st.warning("Category or WEIGHT column missing in data.")
+            st.warning("Category or WT column missing in data.")
 
         # Visualization: Stock Distribution Over Time
         st.subheader("📅 Stock Distribution Over Time")
