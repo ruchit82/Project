@@ -8,6 +8,7 @@ Original file is located at
 https://colab.research.google.com/drive/1aHPwHTOHyDChtT8tTnmoHPKD_f39w-iK
 """
 # -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 import streamlit as st
 import pandas as pd
 import plotly.express as px
@@ -69,24 +70,26 @@ elif page == "Dashboard":
 
     if not df_sales.empty and not df_factory.empty:
         # Overall Inventory Statistics
-        total_pcs = df_sales["PCS"].sum() + df_factory["PCS"].sum()
-        total_wt = df_sales["WEIGHT"].sum() + df_factory["WEIGHT"].sum()
+        total_pcs = df_sales["PCS"].sum() if "PCS" in df_sales.columns else 0
+        total_pcs += df_factory["PCS"].sum() if "PCS" in df_factory.columns else 0
+        total_wt = df_sales["WEIGHT"].sum() if "WEIGHT" in df_sales.columns else 0
+        total_wt += df_factory["WEIGHT"].sum() if "WEIGHT" in df_factory.columns else 0
         st.subheader("📊 Overall Inventory Statistics")
         col1, col2 = st.columns(2)
         col1.metric("📦 Total Pieces", total_pcs)
         col2.metric("⚖️ Total Weight", total_wt)
      
         # Salesperson Statistics
-        sales_pcs = df_sales["PCS"].sum()
-        sales_wt = df_sales["WEIGHT"].sum()
+        sales_pcs = df_sales["PCS"].sum() if "PCS" in df_sales.columns else 0
+        sales_wt = df_sales["WEIGHT"].sum() if "WEIGHT" in df_sales.columns else 0
         st.subheader("🧑‍💼 Salesperson Inventory Statistics")
         col3, col4 = st.columns(2)
         col3.metric("📦 Total Pieces (Salesperson)", sales_pcs)
         col4.metric("⚖️ Total Weight (Salesperson)", sales_wt)
      
         # Factory Inventory Statistics
-        factory_pcs = df_factory["PCS"].sum()
-        factory_wt = df_factory["WEIGHT"].sum()
+        factory_pcs = df_factory["PCS"].sum() if "PCS" in df_factory.columns else 0
+        factory_wt = df_factory["WEIGHT"].sum() if "WEIGHT" in df_factory.columns else 0
         st.subheader("🏭 Factory Inventory Statistics")
         col5, col6 = st.columns(2)
         col5.metric("📦 Total Pieces (Factory)", factory_pcs)
@@ -94,14 +97,20 @@ elif page == "Dashboard":
 
         # New Bar Chart: Overall Inventory Categories by Weight
         st.subheader("📊 Overall Inventory Categories by Weight")
-        combined_df = pd.concat([df_sales, df_factory])
-        category_wt = combined_df.groupby("Category")["WEIGHT"].sum().sort_values(ascending=False)
-        st.bar_chart(category_wt)
+        combined_df = pd.concat([df_sales, df_factory], ignore_index=True)
+        if "Category" in combined_df.columns and "WEIGHT" in combined_df.columns:
+            category_wt = combined_df.groupby("Category")["WEIGHT"].sum().sort_values(ascending=False)
+            st.bar_chart(category_wt)
+        else:
+            st.warning("Category or WEIGHT column missing in data.")
 
         # Visualization: Stock Distribution Over Time
         st.subheader("📅 Stock Distribution Over Time")
-        stock_over_time = combined_df.groupby(combined_df["DATE"].dt.date)["PCS"].sum()
-        st.line_chart(stock_over_time)
+        if "DATE" in combined_df.columns and "PCS" in combined_df.columns:
+            stock_over_time = combined_df.groupby(combined_df["DATE"].dt.date)["PCS"].sum()
+            st.line_chart(stock_over_time)
+        else:
+            st.warning("DATE or PCS column missing in data.")
     else:
         st.warning("⚠️ No data available! Please check your Google Sheet link.")
 
@@ -114,13 +123,13 @@ def render_inventory_page(title, inventory_data):
     
     st.subheader("🔍 Search & Filter")
     search_term = st.text_input("Search by Design No", "").strip()
-    categories = inventory_data['Category'].dropna().unique()
+    categories = inventory_data['Category'].dropna().unique() if 'Category' in inventory_data.columns else []
     category_filter = st.selectbox("Filter by Category", ['All'] + list(categories))
     
     filtered_data = inventory_data.copy()
-    if category_filter != 'All':
+    if category_filter != 'All' and 'Category' in filtered_data.columns:
         filtered_data = filtered_data[filtered_data['Category'] == category_filter]
-    if search_term:
+    if search_term and 'DESIGN NO' in filtered_data.columns:
         filtered_data = filtered_data[filtered_data['DESIGN NO'].astype(str).str.contains(search_term, case=False, na=False)]
     
     st.dataframe(filtered_data, use_container_width=True)
@@ -153,4 +162,3 @@ if report_type == "PDF":
     st.sidebar.write("🚀 PDF Report Generation Coming Soon!")
 elif report_type == "Excel":
     st.sidebar.write("🚀 Excel Report Generation Coming Soon!")
-
