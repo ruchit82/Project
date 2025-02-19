@@ -25,7 +25,7 @@ def load_data():
 
 # Function to extract category from Design No
 def extract_category(design_no):
-    categories = ["CM", "EX", "ITCM", "BR", "NK", "RG"]  # Example categories
+    categories = ["CM", "CL", "CN", "CZ", "EX", "FR", "FS", "GL", "GT", "OP", "PL", "LN", "LO", "MD", "MV", "NA", "SP", "SPE", "UN"]
     for category in categories:
         if category in design_no:
             return category
@@ -103,3 +103,4 @@ elif page == "Inventory Data":
 if st.button("🔄 Refresh Data"):
     sales_df, factory_df = load_data()
     st.experimental_rerun()
+
