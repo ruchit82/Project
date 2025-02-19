@@ -11,6 +11,7 @@ import streamlit as st
 import pandas as pd
 import datetime
 import requests
+import plotly.express as px
 
 # Google Sheet URLs
 SALES_SHEET_URL = "https://docs.google.com/spreadsheets/d/1Jwx4TntDxlwghFn_eC_NgooXlpvR6WTDdvWy4PO0zgk/export?format=csv&gid=2076018430"
@@ -24,14 +25,11 @@ def load_data():
 
 # Function to extract category from Design No
 def extract_category(design_no):
-    if "CM" in design_no:
-        return "CM"
-    elif "EX" in design_no:
-        return "EX"
-    elif "ITCM" in design_no:
-        return "CM"
-    else:
-        return "Other"
+    categories = ["CM", "EX", "ITCM", "BR", "NK", "RG"]  # Example categories
+    for category in categories:
+        if category in design_no:
+            return category
+    return "Other"
 
 # Load Data
 sales_df, factory_df = load_data()
@@ -50,38 +48,58 @@ page = st.sidebar.radio("Go to", ["Dashboard", "Aged Stock", "Inventory Data"])
 
 # Dashboard Page
 if page == "Dashboard":
-    st.title("Stock Inventory Dashboard")
-
+    st.title("📊 Stock Inventory Dashboard")
+    
     total_sales = sales_df['PCS'].sum()
+    total_sales_weight = sales_df['WT'].sum()
     total_factory_stock = factory_df['PCS'].sum()
-
+    total_factory_weight = factory_df['WT'].sum()
+    overall_pcs = total_sales + total_factory_stock
+    overall_weight = total_sales_weight + total_factory_weight
+    
     st.metric("Total Sales (PCS)", total_sales)
+    st.metric("Total Sales Weight (WT)", total_sales_weight)
     st.metric("Total Factory Stock (PCS)", total_factory_stock)
-
+    st.metric("Total Factory Stock Weight (WT)", total_factory_weight)
+    st.metric("Overall Inventory (PCS)", overall_pcs)
+    st.metric("Overall Inventory Weight (WT)", overall_weight)
+    
+    # Visualizations
+    category_count = sales_df['CATEGORY'].value_counts().reset_index()
+    category_count.columns = ['Category', 'Count']
+    fig = px.bar(category_count, x='Category', y='Count', title="Sales by Category")
+    st.plotly_chart(fig)
+    
     st.write("### Sales Data Preview")
-    st.dataframe(sales_df.head())
-
+    st.dataframe(sales_df)
+    
     st.write("### Factory Inventory Preview")
-    st.dataframe(factory_df.head())
+    st.dataframe(factory_df)
 
 # Aged Stock Page
 elif page == "Aged Stock":
-    st.title("Aged Stock (More than 15 days old)")
+    st.title("🕒 Aged Stock (More than 15 days old)")
     cutoff_date = datetime.datetime.today() - datetime.timedelta(days=15)
     aged_stock = factory_df[factory_df['DATE'] < cutoff_date]
     st.write(f"### Stock older than 15 days (before {cutoff_date.date()})")
     st.dataframe(aged_stock)
+    
+    # Aged stock visualization
+    aged_category_count = aged_stock['CATEGORY'].value_counts().reset_index()
+    aged_category_count.columns = ['Category', 'Count']
+    fig = px.pie(aged_category_count, names='Category', values='Count', title="Aged Stock by Category")
+    st.plotly_chart(fig)
 
 # Inventory Data Page
 elif page == "Inventory Data":
-    st.title("Inventory Data")
+    st.title("📋 Inventory Data")
     st.write("### Salesperson Inventory")
     st.dataframe(sales_df)
-
+    
     st.write("### Factory Inventory")
     st.dataframe(factory_df)
 
 # Refresh Button
-if st.button("Refresh Data"):
+if st.button("🔄 Refresh Data"):
     sales_df, factory_df = load_data()
     st.experimental_rerun()
