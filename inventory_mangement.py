@@ -77,9 +77,9 @@ elif page == "Dashboard":
     st.metric("Overall Inventory Weight (WT)", overall_weight)
     
     # Visualizations
-    category_count = sales_df['CATEGORY'].value_counts().reset_index()
-    category_count.columns = ['Category', 'Count']
-    fig = px.bar(category_count, x='Category', y='Count', title="Sales by Category")
+    category_weight = sales_df.groupby('CATEGORY')['WT'].sum().reset_index()
+    category_weight.columns = ['Category', 'Weight']
+    fig = px.bar(category_weight, x='Category', y='Weight', title="Sales Weight by Category")
     st.plotly_chart(fig)
     
     st.write("### Sales Data Preview")
@@ -97,9 +97,9 @@ elif page == "Aged Stock":
     st.dataframe(aged_stock)
     
     # Aged stock visualization
-    aged_category_count = aged_stock['CATEGORY'].value_counts().reset_index()
-    aged_category_count.columns = ['Category', 'Count']
-    fig = px.pie(aged_category_count, names='Category', values='Count', title="Aged Stock by Category")
+    aged_category_weight = aged_stock.groupby('CATEGORY')['WT'].sum().reset_index()
+    aged_category_weight.columns = ['Category', 'Weight']
+    fig = px.pie(aged_category_weight, names='Category', values='Weight', title="Aged Stock Weight by Category")
     st.plotly_chart(fig)
 
 # Inventory Data Page
@@ -131,4 +131,3 @@ elif page == "Export Data":
 if st.button("Refresh Data"):
     sales_df, factory_df = load_data()
     st.experimental_rerun()
-
