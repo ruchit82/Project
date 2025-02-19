@@ -44,9 +44,9 @@ factory_df['CATEGORY'] = factory_df['DESIGN NO'].astype(str).apply(extract_categ
 
 # Exclude items marked as OUT
 if 'OUT' in sales_df.columns:
-    sales_df = sales_df[sales_df['OUT'].str.lower() != 'yes']
+    sales_df = sales_df[sales_df['OUT'].str.lower() != 'OUT']
 if 'OUT' in factory_df.columns:
-    factory_df = factory_df[factory_df['OUT'].str.lower() != 'yes']
+    factory_df = factory_df[factory_df['OUT'].str.lower() != 'out']
 
 # Sidebar Navigation
 st.sidebar.title("Navigation")
