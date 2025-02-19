@@ -81,12 +81,6 @@ elif page == "Dashboard":
     category_weight.columns = ['Category', 'Weight']
     fig = px.bar(category_weight, x='Category', y='Weight', title="Sales Weight by Category")
     st.plotly_chart(fig)
-    
-    st.write("### Sales Data Preview")
-    st.dataframe(sales_df)
-    
-    st.write("### Factory Inventory Preview")
-    st.dataframe(factory_df)
 
 # Aged Stock Page
 elif page == "Aged Stock":
