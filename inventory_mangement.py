@@ -44,9 +44,9 @@ factory_df['CATEGORY'] = factory_df['DESIGN NO'].astype(str).apply(extract_categ
 
 # Exclude items marked as OUT
 if 'OUT' in sales_df.columns:
-    sales_df = sales_df[sales_df['OUT'].str.lower() != 'OUT']
+    sales_df = sales_df[~sales_df['OUT'].str.lower().isin(['out'])]
 if 'OUT' in factory_df.columns:
-    factory_df = factory_df[factory_df['OUT'].str.lower() != 'out']
+    factory_df = factory_df[~factory_df['OUT'].str.lower().isin(['out'])]
 
 # Sidebar Navigation
 st.sidebar.title("Navigation")
@@ -124,4 +124,3 @@ elif page == "Export Data":
 if st.button("Refresh Data"):
     sales_df, factory_df = load_data()
     st.experimental_rerun()
-
