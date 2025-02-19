@@ -43,6 +43,12 @@ factory_df['DATE'] = pd.to_datetime(factory_df['DATE'], errors='coerce')
 sales_df['CATEGORY'] = sales_df['DESIGN NO'].astype(str).apply(extract_category)
 factory_df['CATEGORY'] = factory_df['DESIGN NO'].astype(str).apply(extract_category)
 
+# Exclude items marked as OUT
+if 'OUT' in sales_df.columns:
+    sales_df = sales_df[sales_df['OUT'] != 'Yes']
+if 'OUT' in factory_df.columns:
+    factory_df = factory_df[factory_df['OUT'] != 'Yes']
+
 # Sidebar Navigation
 st.sidebar.title("Navigation")
 page = st.sidebar.radio("Go to", ["Home", "Dashboard", "Aged Stock", "Inventory Data", "Export Data"])
@@ -62,18 +68,12 @@ if page == "Home":
 elif page == "Dashboard":
     st.title("Stock Inventory Dashboard")
     
-    total_sales = sales_df['PCS'].sum()
     total_sales_weight = sales_df['WT'].sum()
-    total_factory_stock = factory_df['PCS'].sum()
     total_factory_weight = factory_df['WT'].sum()
-    overall_pcs = total_sales + total_factory_stock
     overall_weight = total_sales_weight + total_factory_weight
     
-    st.metric("Total Sales (PCS)", total_sales)
     st.metric("Total Sales Weight (WT)", total_sales_weight)
-    st.metric("Total Factory Stock (PCS)", total_factory_stock)
     st.metric("Total Factory Stock Weight (WT)", total_factory_weight)
-    st.metric("Overall Inventory (PCS)", overall_pcs)
     st.metric("Overall Inventory Weight (WT)", overall_weight)
     
     # Visualizations
