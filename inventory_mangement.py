@@ -42,11 +42,11 @@ factory_df['DATE'] = pd.to_datetime(factory_df['DATE'], errors='coerce')
 sales_df['CATEGORY'] = sales_df['DESIGN NO'].astype(str).apply(extract_category)
 factory_df['CATEGORY'] = factory_df['DESIGN NO'].astype(str).apply(extract_category)
 
-# Exclude items marked as OUT
-if 'OUT' in sales_df.columns:
-    sales_df = sales_df[~sales_df['OUT'].str.lower().eq('out')]
-if 'OUT' in factory_df.columns:
-    factory_df = factory_df[~factory_df['OUT'].str.lower().eq('out')]
+# Exclude items marked as OUT in the Delivered column
+if 'DELIVERED' in sales_df.columns:
+    sales_df = sales_df[~sales_df['DELIVERED'].str.lower().eq('out')]
+if 'DELIVERED' in factory_df.columns:
+    factory_df = factory_df[~factory_df['DELIVERED'].str.lower().eq('out')]
 
 # Sidebar Navigation
 st.sidebar.title("Navigation")
