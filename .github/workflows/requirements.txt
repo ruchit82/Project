@@ -12,3 +12,11 @@ plotly.express
 schedule
 time
 Time
+streamlit
+pandas
+numpy
+plotly
+scikit-learn
+schedule
+xlsxwriter
+requests
