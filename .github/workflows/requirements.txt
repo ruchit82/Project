@@ -9,3 +9,6 @@ requests
 FPDF
 fpdf
 plotly.express
+schedule
+time
+Time
