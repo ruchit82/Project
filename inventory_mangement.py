@@ -11,7 +11,11 @@ import pandas as pd
 import datetime
 import requests
 import plotly.express as px
+import numpy as np
 from io import BytesIO
+from sklearn.linear_model import LinearRegression
+import schedule
+import time
 
 # Google Sheet URLs
 SALES_SHEET_URL = "https://docs.google.com/spreadsheets/d/1Jwx4TntDxlwghFn_eC_NgooXlpvR6WTDdvWy4PO0zgk/export?format=csv&gid=2076018430"
@@ -21,6 +25,15 @@ FACTORY_SHEET_URL = "https://docs.google.com/spreadsheets/d/1Jwx4TntDxlwghFn_eC_
 def load_data():
     sales_df = pd.read_csv(SALES_SHEET_URL)
     factory_df = pd.read_csv(FACTORY_SHEET_URL)
+    
+    # Convert DATE columns to datetime
+    sales_df['DATE'] = pd.to_datetime(sales_df['DATE'], errors='coerce')
+    factory_df['DATE'] = pd.to_datetime(factory_df['DATE'], errors='coerce')
+    
+    # Filter out 'OUT' items at load time
+    sales_df = sales_df[~sales_df['DELIVERED'].astype(str).str.lower().eq('out')]
+    factory_df = factory_df[~factory_df['DELIVERED'].astype(str).str.lower().eq('out')]
+    
     return sales_df, factory_df
 
 # Function to extract category from Design No
@@ -34,34 +47,34 @@ def extract_category(design_no):
 # Load Data
 sales_df, factory_df = load_data()
 
-# Convert DATE columns to datetime format
-sales_df['DATE'] = pd.to_datetime(sales_df['DATE'], errors='coerce')
-factory_df['DATE'] = pd.to_datetime(factory_df['DATE'], errors='coerce')
-
 # Add Category Column
 sales_df['CATEGORY'] = sales_df['DESIGN NO'].astype(str).apply(extract_category)
 factory_df['CATEGORY'] = factory_df['DESIGN NO'].astype(str).apply(extract_category)
 
-# Exclude items marked as OUT in the Delivered column
-if 'DELIVERED' in sales_df.columns:
-    sales_df = sales_df[~sales_df['DELIVERED'].astype(str).str.lower().eq('out')]
-if 'DELIVERED' in factory_df.columns:
-    factory_df = factory_df[~factory_df['DELIVERED'].astype(str).str.lower().eq('out')]
-
 # Sidebar Navigation
 st.sidebar.title("Navigation")
-page = st.sidebar.radio("Go to", ["Home", "Dashboard", "Aged Stock", "Inventory Data", "Export Data"])
+page = st.sidebar.radio("Go to", ["Home", "Dashboard", "Aged Stock", "Inventory Data", "Export Data", "Stock Forecast"])
+
+# Filters
+category_filter = st.sidebar.multiselect("Filter by Category", sales_df['CATEGORY'].unique())
+date_range = st.sidebar.date_input("Select Date Range", [sales_df['DATE'].min(), sales_df['DATE'].max()])
+
+# Apply Filters
+if category_filter:
+    sales_df = sales_df[sales_df['CATEGORY'].isin(category_filter)]
+    factory_df = factory_df[factory_df['CATEGORY'].isin(category_filter)]
+
+sales_df = sales_df[(sales_df['DATE'] >= pd.to_datetime(date_range[0])) & (sales_df['DATE'] <= pd.to_datetime(date_range[1]))]
+factory_df = factory_df[(factory_df['DATE'] >= pd.to_datetime(date_range[0])) & (factory_df['DATE'] <= pd.to_datetime(date_range[1]))]
 
 # Home Page
 if page == "Home":
     st.title("Welcome to ITAN Jewels Stock Inventory Management")
-    st.write("Manage your live stock efficiently with real-time updates, statistics, and visualizations.")
-    st.write("### Features:")
     st.markdown("- **Dashboard:** View stock statistics and visualizations.")
     st.markdown("- **Aged Stock:** Monitor inventory older than 15 days.")
     st.markdown("- **Inventory Data:** Access sales and factory stock details.")
     st.markdown("- **Export Data:** Download data as PDF or Excel.")
-    st.markdown("- **Refresh Button:** Reload data for real-time updates.")
+    st.markdown("- **Stock Forecast:** Predict future stock levels.")
 
 # Dashboard Page
 elif page == "Dashboard":
@@ -75,10 +88,8 @@ elif page == "Dashboard":
     st.metric("Total Factory Stock Weight (WT)", total_factory_weight)
     st.metric("Overall Inventory Weight (WT)", overall_weight)
     
-    # Visualizations
     category_weight = sales_df.groupby('CATEGORY')['WT'].sum().reset_index()
-    category_weight.columns = ['Category', 'Weight']
-    fig = px.bar(category_weight, x='Category', y='Weight', title="Sales Weight by Category")
+    fig = px.bar(category_weight, x='CATEGORY', y='WT', title="Sales Weight by Category")
     st.plotly_chart(fig)
 
 # Aged Stock Page
@@ -86,39 +97,48 @@ elif page == "Aged Stock":
     st.title("Aged Stock (More than 15 days old)")
     cutoff_date = datetime.datetime.today() - datetime.timedelta(days=15)
     aged_stock = factory_df[factory_df['DATE'] < cutoff_date]
-    st.write(f"### Stock older than 15 days (before {cutoff_date.date()})")
     st.dataframe(aged_stock)
-    
-    # Aged stock visualization
-    aged_category_weight = aged_stock.groupby('CATEGORY')['WT'].sum().reset_index()
-    aged_category_weight.columns = ['Category', 'Weight']
-    fig = px.pie(aged_category_weight, names='Category', values='Weight', title="Aged Stock Weight by Category")
-    st.plotly_chart(fig)
 
 # Inventory Data Page
 elif page == "Inventory Data":
     st.title("Inventory Data")
-    st.write("### Salesperson Inventory")
     st.dataframe(sales_df)
-    
-    st.write("### Factory Inventory")
     st.dataframe(factory_df)
 
 # Export Data Page
 elif page == "Export Data":
     st.title("Export Data")
-    
-    # Export to Excel
     excel_buffer = BytesIO()
     with pd.ExcelWriter(excel_buffer, engine='xlsxwriter') as writer:
         sales_df.to_excel(writer, sheet_name='Sales Inventory', index=False)
         factory_df.to_excel(writer, sheet_name='Factory Inventory', index=False)
-        writer.close()
-    st.download_button("Download Excel File", data=excel_buffer.getvalue(), file_name="Inventory_Data.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-    
-    # Export to CSV
-    csv_data = sales_df.to_csv(index=False).encode('utf-8')
-    st.download_button("Download CSV File", data=csv_data, file_name="Sales_Inventory.csv", mime="text/csv")
+    st.download_button("Download Excel File", data=excel_buffer.getvalue(), file_name="Inventory_Data.xlsx")
+
+# Stock Forecast Page
+elif page == "Stock Forecast":
+    st.title("Stock Forecasting")
+    sales_df['Day'] = (sales_df['DATE'] - sales_df['DATE'].min()).dt.days
+    X = sales_df[['Day']]
+    y = sales_df['WT']
+    model = LinearRegression()
+    model.fit(X, y)
+    future_days = np.array([[i] for i in range(X['Day'].max() + 1, X['Day'].max() + 31)])
+    future_predictions = model.predict(future_days)
+    forecast_df = pd.DataFrame({"Day": future_days.flatten(), "Predicted WT": future_predictions})
+    fig = px.line(forecast_df, x='Day', y='Predicted WT', title="Stock Prediction for Next 30 Days")
+    st.plotly_chart(fig)
+
+# Automated Reports (Runs in Background)
+def send_report():
+    print("Sending scheduled report...")
+    # Logic to generate and send reports via email (SMTP or API)
+
+schedule.every().monday.at("08:00").do(send_report)
+
+# Run Scheduler in Background
+while True:
+    schedule.run_pending()
+    time.sleep(60)
 
 # Refresh Button
 if st.button("Refresh Data"):
