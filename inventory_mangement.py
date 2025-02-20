@@ -143,7 +143,7 @@ elif page == "Reports":
         
         with smtplib.SMTP('smtp.gmail.com', 587) as server:
             server.starttls()
-            server.login(sender_email, "your_password")
+            server.login(ruchitsanap00@gmail.com, "blhm mtru wcbn wqza")
             server.sendmail(sender_email, receiver_email, msg.as_string())
         
         st.success("Report Sent Successfully")
