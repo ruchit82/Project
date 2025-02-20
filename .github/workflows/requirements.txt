@@ -10,7 +10,6 @@ FPDF
 fpdf
 plotly.express
 schedule
-Time
 streamlit
 pandas
 numpy
