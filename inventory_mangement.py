@@ -18,6 +18,8 @@ import schedule
 import time
 import smtplib
 from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+import threading
 
 # Google Sheet URLs
 SALES_SHEET_URL = "https://docs.google.com/spreadsheets/d/1Jwx4TntDxlwghFn_eC_NgooXlpvR6WTDdvWy4PO0zgk/export?format=csv&gid=2076018430"
@@ -28,17 +30,15 @@ def load_data():
     sales_df = pd.read_csv(SALES_SHEET_URL)
     factory_df = pd.read_csv(FACTORY_SHEET_URL)
     
-    # Convert DATE columns to datetime
     sales_df['DATE'] = pd.to_datetime(sales_df['DATE'], errors='coerce')
     factory_df['DATE'] = pd.to_datetime(factory_df['DATE'], errors='coerce')
     
-    # Filter out 'OUT' items at load time
     sales_df = sales_df[~sales_df['DELIVERED'].astype(str).str.lower().eq('out')]
     factory_df = factory_df[~factory_df['DELIVERED'].astype(str).str.lower().eq('out')]
     
     return sales_df, factory_df
 
-# Function to extract category from Design No
+# Function to extract category
 def extract_category(design_no):
     categories = ["CM", "CL", "CN", "CZ", "EX", "FR", "FS", "GL", "GT", "OP", "PL", "LN", "LO", "MD", "MV", "NA", "SP", "SPE", "UN"]
     for category in categories:
@@ -49,42 +49,29 @@ def extract_category(design_no):
 # Load Data
 sales_df, factory_df = load_data()
 
-# Add Category Column
 sales_df['CATEGORY'] = sales_df['DESIGN NO'].astype(str).apply(extract_category)
 factory_df['CATEGORY'] = factory_df['DESIGN NO'].astype(str).apply(extract_category)
 
 # Sidebar Navigation
 st.sidebar.title("Navigation")
-page = st.sidebar.radio("Go to", ["Home", "Dashboard", "Aged Stock", "Inventory Data", "Export Data", "Stock Forecast"])
+st.sidebar.text_input("Search Inventory", key="search")
+page = st.sidebar.radio("Go to", ["Home", "Dashboard", "Aged Stock", "Inventory Data", "Export Data", "Stock Forecast", "Reports"])
 
-# Search in Inventory Data
-search_term = st.sidebar.text_input("Search Design No / Category / Date")
+st.experimental_set_query_params(page=page)
 
-# Filters
-category_filter = st.sidebar.multiselect("Filter by Category", sales_df['CATEGORY'].unique())
-date_range = st.sidebar.date_input("Select Date Range", [sales_df['DATE'].min(), sales_df['DATE'].max()])
-
-# Apply Filters
-if category_filter:
-    sales_df = sales_df[sales_df['CATEGORY'].isin(category_filter)]
-    factory_df = factory_df[factory_df['CATEGORY'].isin(category_filter)]
-
-sales_df = sales_df[(sales_df['DATE'] >= pd.to_datetime(date_range[0])) & (sales_df['DATE'] <= pd.to_datetime(date_range[1]))]
-factory_df = factory_df[(factory_df['DATE'] >= pd.to_datetime(date_range[0])) & (factory_df['DATE'] <= pd.to_datetime(date_range[1]))]
-
-# Apply Search Filter
-if search_term:
-    sales_df = sales_df[sales_df.apply(lambda row: search_term.lower() in str(row).lower(), axis=1)]
-    factory_df = factory_df[factory_df.apply(lambda row: search_term.lower() in str(row).lower(), axis=1)]
+# Clear previous pages when navigating
+def clear_page():
+    st.empty()
 
 # Home Page
 if page == "Home":
+    clear_page()
     st.title("Welcome to ITAN Jewels Stock Inventory Management")
 
 # Dashboard Page
 elif page == "Dashboard":
+    clear_page()
     st.title("Stock Inventory Dashboard")
-    
     total_sales_weight = sales_df['WT'].sum()
     total_factory_weight = factory_df['WT'].sum()
     overall_weight = total_sales_weight + total_factory_weight
@@ -101,14 +88,32 @@ elif page == "Dashboard":
     fig2 = px.line(sales_trend, x='DATE', y='WT', title="Sales Trend Over Time")
     st.plotly_chart(fig2)
 
+# Aged Stock Page
+elif page == "Aged Stock":
+    clear_page()
+    st.title("Aged Stock Inventory")
+    aged_stock = sales_df[sales_df['DATE'] < datetime.datetime.now() - pd.DateOffset(months=6)]
+    st.dataframe(aged_stock)
+
 # Export Data Page
 elif page == "Export Data":
+    clear_page()
     st.title("Export Filtered Data")
-    csv = sales_df.to_csv(index=False).encode('utf-8')
+    export_option = st.radio("Choose data to export", ["Overall Inventory", "Salesperson Inventory", "Factory Inventory"])
+    
+    if export_option == "Overall Inventory":
+        export_df = sales_df
+    elif export_option == "Salesperson Inventory":
+        export_df = sales_df[sales_df['CATEGORY'] == "SP"]
+    else:
+        export_df = factory_df
+    
+    csv = export_df.to_csv(index=False).encode('utf-8')
     st.download_button("Download CSV", data=csv, file_name="Filtered_Inventory.csv", mime='text/csv')
 
 # Stock Forecast Page
 elif page == "Stock Forecast":
+    clear_page()
     st.title("Stock Forecasting")
     sales_df['Day'] = (sales_df['DATE'] - sales_df['DATE'].min()).dt.days
     X = sales_df[['Day']]
@@ -121,24 +126,45 @@ elif page == "Stock Forecast":
     fig = px.line(forecast_df, x='Day', y='Predicted WT', title="Stock Prediction for Next 30 Days")
     st.plotly_chart(fig)
 
-# Scheduled Reports
-def send_report():
-    sender_email = "your_email@example.com"
-    receiver_email = "recipient@example.com"
-    subject = "Weekly Stock Report"
-    body = "Attached is the latest stock report."
-    msg = MIMEText(body)
-    msg['Subject'] = subject
-    msg['From'] = sender_email
-    msg['To'] = receiver_email
-    with smtplib.SMTP('smtp.example.com', 587) as server:
-        server.starttls()
-        server.login(sender_email, "your_password")
-        server.sendmail(sender_email, receiver_email, msg.as_string())
-    print("Report Sent")
+# Reports Page
+elif page == "Reports":
+    clear_page()
+    st.title("Scheduled and Manual Reports")
+    
+    def send_report(receiver_email):
+        sender_email = "your_email@example.com"
+        subject = "Stock Report"
+        body = "Attached is the latest stock report."
+        msg = MIMEMultipart()
+        msg['From'] = sender_email
+        msg['To'] = receiver_email
+        msg['Subject'] = subject
+        msg.attach(MIMEText(body, 'plain'))
+        
+        with smtplib.SMTP('smtp.example.com', 587) as server:
+            server.starttls()
+            server.login(sender_email, "your_password")
+            server.sendmail(sender_email, receiver_email, msg.as_string())
+        
+        st.success("Report Sent Successfully")
+    
+    receiver_email = st.text_input("Enter Email Address to Send Report")
+    if st.button("Send Report"):
+        if receiver_email:
+            send_report(receiver_email)
+        else:
+            st.error("Please enter a valid email address.")
+    
+    def schedule_report():
+        send_report("recipient@example.com")
+    
+    schedule.every().monday.at("08:00").do(schedule_report)
+    st.write("Reports are automatically sent every Monday at 08:00 AM.")
 
-schedule.every().monday.at("08:00").do(send_report)
-
-while True:
-    schedule.run_pending()
-    time.sleep(60)
+# Run Scheduled Jobs in Background
+def run_schedule():
+    while True:
+        schedule.run_pending()
+        time.sleep(60)
+thread = threading.Thread(target=run_schedule, daemon=True)
+thread.start()
