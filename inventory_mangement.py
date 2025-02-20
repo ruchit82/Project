@@ -16,27 +16,31 @@ from io import BytesIO
 from sklearn.linear_model import LinearRegression
 import schedule
 import time
+import threading
 
 # Google Sheet URLs
 SALES_SHEET_URL = "https://docs.google.com/spreadsheets/d/1Jwx4TntDxlwghFn_eC_NgooXlpvR6WTDdvWy4PO0zgk/export?format=csv&gid=2076018430"
 FACTORY_SHEET_URL = "https://docs.google.com/spreadsheets/d/1Jwx4TntDxlwghFn_eC_NgooXlpvR6WTDdvWy4PO0zgk/export?format=csv&gid=0"
 
 # Function to load data from Google Sheets
+@st.cache_data
 def load_data():
-    sales_df = pd.read_csv(SALES_SHEET_URL)
-    factory_df = pd.read_csv(FACTORY_SHEET_URL)
-    
-    # Convert DATE columns to datetime
-    sales_df['DATE'] = pd.to_datetime(sales_df['DATE'], errors='coerce')
-    factory_df['DATE'] = pd.to_datetime(factory_df['DATE'], errors='coerce')
-    
-    # Filter out 'OUT' items at load time
-    sales_df = sales_df[~sales_df['DELIVERED'].astype(str).str.lower().eq('out')]
-    factory_df = factory_df[~factory_df['DELIVERED'].astype(str).str.lower().eq('out')]
-    
-    return sales_df, factory_df
+    try:
+        sales_df = pd.read_csv(SALES_SHEET_URL)
+        factory_df = pd.read_csv(FACTORY_SHEET_URL)
 
-# Function to extract category from Design No
+        sales_df['DATE'] = pd.to_datetime(sales_df['DATE'], errors='coerce')
+        factory_df['DATE'] = pd.to_datetime(factory_df['DATE'], errors='coerce')
+
+        sales_df = sales_df[~sales_df['DELIVERED'].astype(str).str.lower().eq('out')]
+        factory_df = factory_df[~factory_df['DELIVERED'].astype(str).str.lower().eq('out')]
+        
+        return sales_df, factory_df
+    except Exception as e:
+        st.error(f"Error loading data: {e}")
+        return pd.DataFrame(), pd.DataFrame()
+
+# Extract category function
 def extract_category(design_no):
     categories = ["CM", "CL", "CN", "CZ", "EX", "FR", "FS", "GL", "GT", "OP", "PL", "LN", "LO", "MD", "MV", "NA", "SP", "SPE", "UN"]
     for category in categories:
@@ -47,7 +51,6 @@ def extract_category(design_no):
 # Load Data
 sales_df, factory_df = load_data()
 
-# Add Category Column
 sales_df['CATEGORY'] = sales_df['DESIGN NO'].astype(str).apply(extract_category)
 factory_df['CATEGORY'] = factory_df['DESIGN NO'].astype(str).apply(extract_category)
 
@@ -55,90 +58,69 @@ factory_df['CATEGORY'] = factory_df['DESIGN NO'].astype(str).apply(extract_categ
 st.sidebar.title("Navigation")
 page = st.sidebar.radio("Go to", ["Home", "Dashboard", "Aged Stock", "Inventory Data", "Export Data", "Stock Forecast"])
 
-# Filters
-category_filter = st.sidebar.multiselect("Filter by Category", sales_df['CATEGORY'].unique())
-date_range = st.sidebar.date_input("Select Date Range", [sales_df['DATE'].min(), sales_df['DATE'].max()])
-
-# Apply Filters
-if category_filter:
-    sales_df = sales_df[sales_df['CATEGORY'].isin(category_filter)]
-    factory_df = factory_df[factory_df['CATEGORY'].isin(category_filter)]
-
-sales_df = sales_df[(sales_df['DATE'] >= pd.to_datetime(date_range[0])) & (sales_df['DATE'] <= pd.to_datetime(date_range[1]))]
-factory_df = factory_df[(factory_df['DATE'] >= pd.to_datetime(date_range[0])) & (factory_df['DATE'] <= pd.to_datetime(date_range[1]))]
-
-# Home Page
-if page == "Home":
-    st.title("Welcome to ITAN Jewels Stock Inventory Management")
-    st.markdown("- **Dashboard:** View stock statistics and visualizations.")
-    st.markdown("- **Aged Stock:** Monitor inventory older than 15 days.")
-    st.markdown("- **Inventory Data:** Access sales and factory stock details.")
-    st.markdown("- **Export Data:** Download data as PDF or Excel.")
-    st.markdown("- **Stock Forecast:** Predict future stock levels.")
-
-# Dashboard Page
-elif page == "Dashboard":
-    st.title("Stock Inventory Dashboard")
+# Dashboard
+if page == "Dashboard":
+    st.title("📊 Stock Inventory Dashboard")
+    
+    col1, col2, col3 = st.columns(3)
     
     total_sales_weight = sales_df['WT'].sum()
     total_factory_weight = factory_df['WT'].sum()
     overall_weight = total_sales_weight + total_factory_weight
     
-    st.metric("Total Sales Weight (WT)", total_sales_weight)
-    st.metric("Total Factory Stock Weight (WT)", total_factory_weight)
-    st.metric("Overall Inventory Weight (WT)", overall_weight)
+    col1.metric("Total Sales Weight", total_sales_weight)
+    col2.metric("Total Factory Stock Weight", total_factory_weight)
+    col3.metric("Overall Inventory Weight", overall_weight)
     
     category_weight = sales_df.groupby('CATEGORY')['WT'].sum().reset_index()
-    fig = px.bar(category_weight, x='CATEGORY', y='WT', title="Sales Weight by Category")
-    st.plotly_chart(fig)
+    st.plotly_chart(px.bar(category_weight, x='CATEGORY', y='WT', title="Sales Weight by Category"))
+    
+    sales_trend = sales_df.groupby('DATE')['WT'].sum().reset_index()
+    st.plotly_chart(px.line(sales_trend, x='DATE', y='WT', title="Sales Trend Over Time"))
+    
+    factory_trend = factory_df.groupby('DATE')['WT'].sum().reset_index()
+    st.plotly_chart(px.line(factory_trend, x='DATE', y='WT', title="Factory Stock Trend"))
 
-# Aged Stock Page
-elif page == "Aged Stock":
-    st.title("Aged Stock (More than 15 days old)")
-    cutoff_date = datetime.datetime.today() - datetime.timedelta(days=15)
-    aged_stock = factory_df[factory_df['DATE'] < cutoff_date]
-    st.dataframe(aged_stock)
-
-# Inventory Data Page
+# Inventory Data with Search
 elif page == "Inventory Data":
-    st.title("Inventory Data")
-    st.dataframe(sales_df)
-    st.dataframe(factory_df)
+    st.title("📦 Inventory Data")
+    search_query = st.text_input("Search by Design No, Category, or Date")
+    
+    filtered_sales_df = sales_df[sales_df.apply(lambda row: search_query.lower() in str(row).lower(), axis=1)]
+    filtered_factory_df = factory_df[factory_df.apply(lambda row: search_query.lower() in str(row).lower(), axis=1)]
+    
+    st.subheader("Sales Inventory")
+    st.dataframe(filtered_sales_df)
+    
+    st.subheader("Factory Inventory")
+    st.dataframe(filtered_factory_df)
 
-# Export Data Page
-elif page == "Export Data":
-    st.title("Export Data")
-    excel_buffer = BytesIO()
-    with pd.ExcelWriter(excel_buffer, engine='xlsxwriter') as writer:
-        sales_df.to_excel(writer, sheet_name='Sales Inventory', index=False)
-        factory_df.to_excel(writer, sheet_name='Factory Inventory', index=False)
-    st.download_button("Download Excel File", data=excel_buffer.getvalue(), file_name="Inventory_Data.xlsx")
-
-# Stock Forecast Page
+# Stock Forecast
 elif page == "Stock Forecast":
-    st.title("Stock Forecasting")
+    st.title("📈 Stock Forecasting")
+    
     sales_df['Day'] = (sales_df['DATE'] - sales_df['DATE'].min()).dt.days
     X = sales_df[['Day']]
     y = sales_df['WT']
     model = LinearRegression()
     model.fit(X, y)
+    
     future_days = np.array([[i] for i in range(X['Day'].max() + 1, X['Day'].max() + 31)])
     future_predictions = model.predict(future_days)
     forecast_df = pd.DataFrame({"Day": future_days.flatten(), "Predicted WT": future_predictions})
-    fig = px.line(forecast_df, x='Day', y='Predicted WT', title="Stock Prediction for Next 30 Days")
-    st.plotly_chart(fig)
-
-# Automated Reports (Runs in Background)
-def send_report():
-    print("Sending scheduled report...")
-    # Logic to generate and send reports via email (SMTP or API)
-
-schedule.every().monday.at("08:00").do(send_report)
+    
+    st.plotly_chart(px.line(forecast_df, x='Day', y='Predicted WT', title="Stock Prediction for Next 30 Days"))
+    
+    moving_avg = sales_df['WT'].rolling(window=7).mean()
+    st.plotly_chart(px.line(x=sales_df['DATE'], y=moving_avg, title="7-Day Moving Average"))
 
 # Run Scheduler in Background
-while True:
-    schedule.run_pending()
-    time.sleep(60)
+def run_scheduler():
+    while True:
+        schedule.run_pending()
+        time.sleep(60)
+
+threading.Thread(target=run_scheduler, daemon=True).start()
 
 # Refresh Button
 if st.button("Refresh Data"):
