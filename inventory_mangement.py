@@ -57,7 +57,7 @@ st.sidebar.title("Navigation")
 st.sidebar.text_input("Search Inventory", key="search")
 page = st.sidebar.radio("Go to", ["Home", "Dashboard", "Aged Stock", "Inventory Data", "Export Data", "Stock Forecast", "Reports"])
 
-st.query_params(page=page)
+st.experimental_set_query_params(page=page)
 
 # Clear previous pages when navigating
 def clear_page():
