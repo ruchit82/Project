@@ -92,7 +92,7 @@ elif page == "Dashboard":
 elif page == "Aged Stock":
     clear_page()
     st.title("Aged Stock Inventory")
-    aged_stock = sales_df[sales_df['DATE'] < datetime.datetime.now() - pd.DateOffset(months=6)]
+    aged_stock = sales_df[sales_df['DATE'] < datetime.datetime.now() - pd.DateOffset(days=10)]
     st.dataframe(aged_stock)
 
 # Inventory Data Page
