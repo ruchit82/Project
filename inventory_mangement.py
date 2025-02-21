@@ -146,7 +146,7 @@ elif page == "Reports":
     st.title("Scheduled and Manual Reports")
     
     def send_report(receiver_email):
-        sender_email = ruchitsanap00@gmail.com"
+        sender_email = "ruchitsanap00@gmail.com"
         subject = "Stock Report"
         body = "Attached is the latest stock report."
         msg = MIMEMultipart()
