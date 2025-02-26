@@ -93,6 +93,10 @@ elif page == "Aged Stock":
     clear_page()
     st.title("Aged Stock Inventory")
     
+    # Debug: Display unique categories in the data
+    st.write("Unique Categories in Sales Data:", sales_df['CATEGORY'].unique())
+    st.write("Unique Categories in Factory Data:", factory_df['CATEGORY'].unique())
+    
     # Add a search bar for the Aged Stock page
     search_query_aged = st.text_input("Search Aged Stock")
     
@@ -107,18 +111,33 @@ elif page == "Aged Stock":
     else:
         aged_df = pd.concat([sales_df, factory_df], ignore_index=True)
     
+    # Debug: Display the filtered data before applying the "out" filter
+    st.write("Filtered Data Before Applying 'Out' Filter:", aged_df)
+    
     # Filter out items marked as "out" (delivered)
     aged_df = aged_df[~aged_df['DELIVERED'].astype(str).str.lower().eq('out')]
+    
+    # Debug: Display the filtered data after applying the "out" filter
+    st.write("Filtered Data After Applying 'Out' Filter:", aged_df)
     
     # Calculate the age of each item (days since DATE)
     aged_df['AGE'] = (datetime.datetime.now() - aged_df['DATE']).dt.days
     
+    # Debug: Display the data with the AGE column
+    st.write("Data with AGE Column:", aged_df)
+    
     # Filter items that have been in inventory for more than 10 days
     aged_stock = aged_df[aged_df['AGE'] > 10]
+    
+    # Debug: Display the aged stock before applying the search filter
+    st.write("Aged Stock Before Applying Search Filter:", aged_stock)
     
     # Apply search filter (if search query is provided)
     if search_query_aged:
         aged_stock = aged_stock[aged_stock.astype(str).apply(lambda x: x.str.contains(search_query_aged, case=False, na=False)).any(axis=1)]
+    
+    # Debug: Display the aged stock after applying the search filter
+    st.write("Aged Stock After Applying Search Filter:", aged_stock)
     
     # Display the aged stock
     st.write(f"Total Aged Stock Items: {len(aged_stock)}")
