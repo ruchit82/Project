@@ -98,17 +98,21 @@ elif page == "Aged Stock":
     clear_page()
     st.title("Aged Stock Inventory")
     
-    # Filter items older than 10 days and not marked as "out"
-    aged_stock = sales_df[
-        (sales_df['DATE'] < datetime.datetime.now() - pd.DateOffset(days=10)) &  # Older than 10 days
-        (~sales_df['DELIVERED'].astype(str).str.lower().eq('out'))  # Not marked as "out"
-    ]
+    # Combine sales and factory data
+    combined_df = pd.concat([sales_df, factory_df], ignore_index=True)
     
-    if aged_stock.empty:
-        st.write("No aged stock found (items older than 10 days and not marked as 'out').")
-    else:
-        st.write("Items in inventory for more than 10 days (excluding items marked as 'out'):")
-        st.dataframe(aged_stock)
+    # Filter out items marked as "out" (delivered)
+    combined_df = combined_df[~combined_df['DELIVERED'].astype(str).str.lower().eq('out')]
+    
+    # Calculate the age of each item (days since DATE)
+    combined_df['AGE'] = (datetime.datetime.now() - combined_df['DATE']).dt.days
+    
+    # Filter items that have been in inventory for more than 10 days
+    aged_stock = combined_df[combined_df['AGE'] > 10]
+    
+    # Display the aged stock
+    st.write(f"Total Aged Stock Items: {len(aged_stock)}")
+    st.dataframe(aged_stock)
 
 
 # Inventory Data Page (with search feature added here)
