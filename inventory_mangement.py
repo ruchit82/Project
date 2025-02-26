@@ -93,6 +93,8 @@ elif page == "Aged Stock":
     clear_page()
     st.title("Aged Stock Inventory")
     
+ inventory_option = st.selectbox("Select Inventory Data", ["Sales Inventory", "Factory Inventory", "Both"])
+    
     # Combine sales and factory data
     combined_df = pd.concat([sales_df, factory_df], ignore_index=True)
     
