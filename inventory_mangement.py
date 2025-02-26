@@ -88,6 +88,12 @@ elif page == "Dashboard":
     fig2 = px.line(sales_trend, x='DATE', y='WT', title="Sales Trend Over Time")
     st.plotly_chart(fig2)
 
+# Load Data
+sales_df, factory_df = load_data()
+
+sales_df['CATEGORY'] = sales_df['DESIGN NO'].astype(str).apply(extract_category)
+factory_df['CATEGORY'] = factory_df['DESIGN NO'].astype(str).apply(extract_category)
+
 # Aged Stock Page
 elif page == "Aged Stock":
     clear_page()
