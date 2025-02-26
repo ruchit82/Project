@@ -107,9 +107,14 @@ elif page == "Aged Stock":
     
     # Display the aged stock
     st.write(f"Total Aged Stock Items: {len(aged_stock)}")
+    
+    # Show a breakdown of aged stock by category (including Salesperson Inventory)
+    st.write("Aged Stock by Category:")
+    aged_stock_by_category = aged_stock.groupby('CATEGORY').size().reset_index(name='Count')
+    st.dataframe(aged_stock_by_category)
+    
+    # Display the full aged stock dataframe
     st.dataframe(aged_stock)
-
-
 # Inventory Data Page (with search feature added here)
 elif page == "Inventory Data":
     clear_page()
