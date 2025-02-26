@@ -93,30 +93,45 @@ elif page == "Aged Stock":
     clear_page()
     st.title("Aged Stock Inventory")
     
- inventory_option = st.selectbox("Select Inventory Data", ["Sales Inventory", "Factory Inventory", "Both"])
+    # Add a search bar for the Aged Stock page
+    search_query_aged = st.text_input("Search Aged Stock")
     
-    # Combine sales and factory data
-    combined_df = pd.concat([sales_df, factory_df], ignore_index=True)
+    # Add inventory selection option
+    inventory_option_aged = st.selectbox("Select Inventory Data for Aged Stock", ["Sales Inventory", "Factory Inventory", "Both"])
+    
+    # Filter data based on the selected inventory option
+    if inventory_option_aged == "Sales Inventory":
+        aged_df = sales_df.copy()
+    elif inventory_option_aged == "Factory Inventory":
+        aged_df = factory_df.copy()
+    else:
+        aged_df = pd.concat([sales_df, factory_df], ignore_index=True)
     
     # Filter out items marked as "out" (delivered)
-    combined_df = combined_df[~combined_df['DELIVERED'].astype(str).str.lower().eq('out')]
+    aged_df = aged_df[~aged_df['DELIVERED'].astype(str).str.lower().eq('out')]
     
     # Calculate the age of each item (days since DATE)
-    combined_df['AGE'] = (datetime.datetime.now() - combined_df['DATE']).dt.days
+    aged_df['AGE'] = (datetime.datetime.now() - aged_df['DATE']).dt.days
     
     # Filter items that have been in inventory for more than 10 days
-    aged_stock = combined_df[combined_df['AGE'] > 10]
+    aged_stock = aged_df[aged_df['AGE'] > 10]
+    
+    # Apply search filter (if search query is provided)
+    if search_query_aged:
+        aged_stock = aged_stock[aged_stock.astype(str).apply(lambda x: x.str.contains(search_query_aged, case=False, na=False)).any(axis=1)]
     
     # Display the aged stock
     st.write(f"Total Aged Stock Items: {len(aged_stock)}")
     
-    # Show a breakdown of aged stock by category (including Salesperson Inventory)
+    # Show a breakdown of aged stock by category
     st.write("Aged Stock by Category:")
     aged_stock_by_category = aged_stock.groupby('CATEGORY').size().reset_index(name='Count')
     st.dataframe(aged_stock_by_category)
     
     # Display the full aged stock dataframe
     st.dataframe(aged_stock)
+    
+
 # Inventory Data Page (with search feature added here)
 elif page == "Inventory Data":
     clear_page()
