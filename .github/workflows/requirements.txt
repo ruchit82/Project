@@ -18,3 +18,4 @@ scikit-learn
 schedule
 xlsxwriter
 requests
+sns
