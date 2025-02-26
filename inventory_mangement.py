@@ -7,6 +7,9 @@ Original file is located at
     https://colab.research.google.com/drive/1tL_XZvVhlQcM57r8T5JziIGw-sql3Ph3
 """
 
+# -*- coding: utf-8 -*-
+"""Inventory_Mangement.ipynb"""
+
 import streamlit as st
 import pandas as pd
 import datetime
@@ -88,17 +91,11 @@ elif page == "Dashboard":
     fig2 = px.line(sales_trend, x='DATE', y='WT', title="Sales Trend Over Time")
     st.plotly_chart(fig2)
 
-# Load Data
-sales_df, factory_df = load_data()
-
-sales_df['CATEGORY'] = sales_df['DESIGN NO'].astype(str).apply(extract_category)
-factory_df['CATEGORY'] = factory_df['DESIGN NO'].astype(str).apply(extract_category)
-
 # Aged Stock Page
 elif page == "Aged Stock":
     clear_page()
     st.title("Aged Stock Inventory")
-        
+    
     # Add a search bar for the Aged Stock page
     search_query_aged = st.text_input("Search Aged Stock")
     
@@ -113,23 +110,19 @@ elif page == "Aged Stock":
     else:
         aged_df = pd.concat([sales_df, factory_df], ignore_index=True)
     
-  
+    # Filter out items marked as "out" (delivered)
+    aged_df = aged_df[~aged_df['DELIVERED'].astype(str).str.lower().eq('out')]
     
     # Calculate the age of each item (days since DATE)
     aged_df['AGE'] = (datetime.datetime.now() - aged_df['DATE']).dt.days
     
-   
-    
     # Filter items that have been in inventory for more than 10 days
     aged_stock = aged_df[aged_df['AGE'] > 10]
-    
-
     
     # Apply search filter (if search query is provided)
     if search_query_aged:
         aged_stock = aged_stock[aged_stock.astype(str).apply(lambda x: x.str.contains(search_query_aged, case=False, na=False)).any(axis=1)]
     
-   
     # Display the aged stock
     st.write(f"Total Aged Stock Items: {len(aged_stock)}")
     
@@ -140,7 +133,6 @@ elif page == "Aged Stock":
     
     # Display the full aged stock dataframe
     st.dataframe(aged_stock)
-    
 
 # Inventory Data Page (with search feature added here)
 elif page == "Inventory Data":
