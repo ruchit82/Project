@@ -97,8 +97,19 @@ elif page == "Dashboard":
 elif page == "Aged Stock":
     clear_page()
     st.title("Aged Stock Inventory")
-    aged_stock = sales_df[sales_df['DATE'] < datetime.datetime.now() - pd.DateOffset(days=10)]
-    st.dataframe(aged_stock)
+    
+    # Filter items older than 10 days and not marked as "out"
+    aged_stock = sales_df[
+        (sales_df['DATE'] < datetime.datetime.now() - pd.DateOffset(days=10)) &  # Older than 10 days
+        (~sales_df['DELIVERED'].astype(str).str.lower().eq('out'))  # Not marked as "out"
+    ]
+    
+    if aged_stock.empty:
+        st.write("No aged stock found (items older than 10 days and not marked as 'out').")
+    else:
+        st.write("Items in inventory for more than 10 days (excluding items marked as 'out'):")
+        st.dataframe(aged_stock)
+
 
 # Inventory Data Page (with search feature added here)
 elif page == "Inventory Data":
