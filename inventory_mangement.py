@@ -9,6 +9,9 @@ Original file is located at
 # -*- coding: utf-8 -*-
 """Inventory_Mangement.ipynb"""
 
+# -*- coding: utf-8 -*-
+"""Inventory_Mangement.ipynb"""
+
 import streamlit as st
 import pandas as pd
 import datetime
