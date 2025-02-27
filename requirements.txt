@@ -26,3 +26,4 @@ xlsxwriter
 requests
 sns
 tabulate
+fpdf
