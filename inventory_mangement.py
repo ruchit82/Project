@@ -7,8 +7,6 @@ Original file is located at
     https://colab.research.google.com/drive/1tL_XZvVhlQcM57r8T5JziIGw-sql3Ph3
 """
 
-# -*- coding: utf-8 -*-
-"""Inventory_Mangement.ipynb"""
 
 import streamlit as st
 import pandas as pd
@@ -230,7 +228,7 @@ elif page == "Reports":
 
         # Save the PDF to a BytesIO object
         pdf_output = BytesIO()
-        pdf.output(pdf_output)
+        pdf_output.write(pdf.output(dest='S').encode('latin-1'))  # Write PDF content to BytesIO
         pdf_output.seek(0)
         return pdf_output
 
