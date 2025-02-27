@@ -7,6 +7,8 @@ Original file is located at
     https://colab.research.google.com/drive/1tL_XZvVhlQcM57r8T5JziIGw-sql3Ph3
 """
 
+# -*- coding: utf-8 -*-
+"""Inventory_Mangement.ipynb"""
 
 import streamlit as st
 import pandas as pd
