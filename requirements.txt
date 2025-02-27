@@ -25,3 +25,4 @@ schedule
 xlsxwriter
 requests
 sns
+tabulate
