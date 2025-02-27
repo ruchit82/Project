@@ -71,25 +71,7 @@ if page == "Home":
     clear_page()
     st.title("Welcome to ITAN Jewels Stock Inventory Management")
 
-# Dashboard Page
-elif page == "Dashboard":
-    clear_page()
-    st.title("Stock Inventory Dashboard")
-    total_sales_weight = sales_df['WT'].sum()
-    total_factory_weight = factory_df['WT'].sum()
-    overall_weight = total_sales_weight + total_factory_weight
-    
-    st.metric("Total Sales Weight (WT)", total_sales_weight)
-    st.metric("Total Factory Stock Weight (WT)", total_factory_weight)
-    st.metric("Overall Inventory Weight (WT)", overall_weight)
-    
-    category_weight = sales_df.groupby('CATEGORY')['WT'].sum().reset_index()
-    fig = px.bar(category_weight, x='CATEGORY', y='WT', title="Sales Weight by Category")
-    st.plotly_chart(fig)
-    
-    sales_trend = sales_df.groupby('DATE')['WT'].sum().reset_index()
-    fig2 = px.line(sales_trend, x='DATE', y='WT', title="Sales Trend Over Time")
-    st.plotly_chart(fig2)
+
 # Dashboard Page
 elif page == "Dashboard":
     clear_page()
