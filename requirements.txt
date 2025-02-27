@@ -20,16 +20,5 @@ xlsxwriter
 requests
 sns
 tabulate
-datetime
-requests
-plotly.express
-numpy 
-io
-BytesIO
-sklearn.linear_model 
-LinearRegression
-time
-smtplib
-threading
 fpdf
 FPDF 
