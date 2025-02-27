@@ -24,6 +24,7 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import threading
+from fpdf import FPDF  # Import FPDF for PDF generation
 
 # Google Sheet URLs
 SALES_SHEET_URL = "https://docs.google.com/spreadsheets/d/1Jwx4TntDxlwghFn_eC_NgooXlpvR6WTDdvWy4PO0zgk/export?format=csv&gid=2076018430"
@@ -191,60 +192,75 @@ elif page == "Reports":
     clear_page()
     st.title("Scheduled and Manual Reports")
 
-    # Function to generate the report
-    def generate_report():
-        report_content = []
+    # Function to generate the report as a PDF
+    def generate_pdf_report():
+        # Create a PDF object
+        pdf = FPDF()
+        pdf.add_page()
+        pdf.set_font("Arial", size=12)
 
-        # Add Dashboard Data to the Report
-        report_content.append("### Dashboard Summary")
+        # Add Dashboard Data to the PDF
+        pdf.cell(200, 10, txt="Dashboard Summary", ln=True, align="C")
         total_sales_weight = sales_df['WT'].sum()
         total_factory_weight = factory_df['WT'].sum()
         overall_weight = total_sales_weight + total_factory_weight
-        report_content.append(f"- **Total Sales Weight (WT):** {total_sales_weight}")
-        report_content.append(f"- **Total Factory Stock Weight (WT):** {total_factory_weight}")
-        report_content.append(f"- **Overall Inventory Weight (WT):** {overall_weight}")
+        pdf.cell(200, 10, txt=f"- Total Sales Weight (WT): {total_sales_weight}", ln=True)
+        pdf.cell(200, 10, txt=f"- Total Factory Stock Weight (WT): {total_factory_weight}", ln=True)
+        pdf.cell(200, 10, txt=f"- Overall Inventory Weight (WT): {overall_weight}", ln=True)
 
-        # Add Aged Stock Data to the Report
-        report_content.append("### Aged Stock Summary")
+        # Add Aged Stock Data to the PDF
+        pdf.cell(200, 10, txt="Aged Stock Summary", ln=True, align="C")
         aged_df = pd.concat([sales_df, factory_df], ignore_index=True)
         aged_df = aged_df[~aged_df['DELIVERED'].astype(str).str.lower().eq('out')]
         aged_df['AGE'] = (datetime.datetime.now() - aged_df['DATE']).dt.days
         aged_stock = aged_df[aged_df['AGE'] > 10]
-        report_content.append(f"- **Total Aged Stock Items:** {len(aged_stock)}")
-        
-        # Breakdown of Aged Stock by Category
-        aged_stock_by_category = aged_stock.groupby('CATEGORY').size().reset_index(name='Count')
-        report_content.append("#### Aged Stock by Category:")
-        report_content.append(aged_stock_by_category.to_markdown(index=False))
+        pdf.cell(200, 10, txt=f"- Total Aged Stock Items: {len(aged_stock)}", ln=True)
 
-        # Combine all content into a single string
-        return "\n".join(report_content)
+        # Add Aged Stock by Category to the PDF
+        pdf.cell(200, 10, txt="Aged Stock by Category:", ln=True)
+        aged_stock_by_category = aged_stock.groupby('CATEGORY').size().reset_index(name='Count')
+        for _, row in aged_stock_by_category.iterrows():
+            pdf.cell(200, 10, txt=f"- {row['CATEGORY']}: {row['Count']}", ln=True)
+
+        # Add the entire Aged Stock Data to the PDF
+        pdf.cell(200, 10, txt="Full Aged Stock Data:", ln=True, align="C")
+        pdf.set_font("Arial", size=10)
+        for _, row in aged_stock.iterrows():
+            pdf.cell(200, 10, txt=f"Design No: {row['DESIGN NO']}, Category: {row['CATEGORY']}, Weight: {row['WT']}, Age: {row['AGE']} days", ln=True)
+
+        # Save the PDF to a BytesIO object
+        pdf_output = BytesIO()
+        pdf.output(pdf_output)
+        pdf_output.seek(0)
+        return pdf_output
 
     # Display the report when the "Generate Report" button is clicked
     if st.button("Generate Report"):
-        report = generate_report()
-        st.markdown(report)
-
-    # Allow the user to download the report as a text file
-    if st.button("Download Report as Text"):
-        report = generate_report()
+        pdf_output = generate_pdf_report()
+        st.success("Report generated successfully!")
         st.download_button(
-            label="Download Report",
-            data=report,
-            file_name="inventory_report.txt",
-            mime="text/plain"
+            label="Download Report as PDF",
+            data=pdf_output,
+            file_name="inventory_report.pdf",
+            mime="application/pdf"
         )
 
     # Email functionality (optional)
     def send_report(receiver_email):
         sender_email = "ruchitsanap00@gmail.com"
         subject = "Stock Report"
-        body = generate_report()  # Use the generated report as the email body
+        body = "Please find the attached stock report."
         msg = MIMEMultipart()
         msg['From'] = sender_email
         msg['To'] = receiver_email
         msg['Subject'] = subject
         msg.attach(MIMEText(body, 'plain'))
+
+        # Attach the PDF report
+        pdf_output = generate_pdf_report()
+        attachment = MIMEText(pdf_output.getvalue(), 'base64', 'application/pdf')
+        attachment.add_header('Content-Disposition', 'attachment', filename="inventory_report.pdf")
+        msg.attach(attachment)
 
         with smtplib.SMTP('smtp.gmail.com', 587) as server:
             server.starttls()
