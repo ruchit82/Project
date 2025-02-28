@@ -177,8 +177,8 @@ elif page == "Stock Forecast":
     else:
         # Prepare data for forecasting
         sales_df_clean['Day'] = (sales_df_clean['DATE'] - sales_df_clean['DATE'].min()).dt.days
-        X = sales_df_clean[['Day']]
-        y = sales_df_clean['WT']
+        X = sales_df_clean[['Day']].values  # Convert to NumPy array
+        y = sales_df_clean['WT'].values  # Convert to NumPy array
         
         # Check for finite values
         if not np.isfinite(X).all() or not np.isfinite(y).all():
@@ -189,7 +189,7 @@ elif page == "Stock Forecast":
             model.fit(X, y)
             
             # Predict for the next 30 days
-            future_days = np.array([[i] for i in range(X['Day'].max() + 1, X['Day'].max() + 31)])
+            future_days = np.array([[i] for i in range(X.max() + 1, X.max() + 31)])  # X is now a NumPy array
             future_predictions = model.predict(future_days)
             
             # Create a DataFrame for the forecast
