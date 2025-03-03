@@ -168,10 +168,24 @@ elif page == "Stock Forecast":
     clear_page()
     st.title("Stock Forecasting")
     
-    # Ensure data is clean and valid
+    # Debug: Display the first few rows of the data
+    st.write("First few rows of the data:", sales_df.head())
+    
+    # Debug: Check for missing values in 'DATE' and 'WT'
+    st.write("Missing values in 'DATE':", sales_df['DATE'].isnull().sum())
+    st.write("Missing values in 'WT':", sales_df['WT'].isnull().sum())
+    
+    # Debug: Check for infinite values in 'WT'
+    st.write("Infinite values in 'WT':", np.isinf(sales_df['WT']).sum())
+    
+    # Clean the data: Drop rows with missing or invalid values
     sales_df_clean = sales_df.dropna(subset=['DATE', 'WT'])  # Drop rows with missing DATE or WT
     sales_df_clean = sales_df_clean[sales_df_clean['WT'] > 0]  # Ensure WT is positive
     
+    # Debug: Display the cleaned data
+    st.write("Cleaned data:", sales_df_clean.head())
+    
+    # Check if there is enough data for forecasting
     if len(sales_df_clean) == 0:
         st.error("No valid data available for forecasting.")
     else:
@@ -180,11 +194,15 @@ elif page == "Stock Forecast":
         X = sales_df_clean[['Day']].values  # Convert to NumPy array
         y = sales_df_clean['WT'].values  # Convert to NumPy array
         
-        # Check for finite values
+        # Debug: Display the shape of X and y
+        st.write("Shape of X:", X.shape)
+        st.write("Shape of y:", y.shape)
+        
+        # Check for finite values in X and y
         if not np.isfinite(X).all() or not np.isfinite(y).all():
             st.error("Data contains non-finite values. Please clean the data.")
         else:
-            # Fit the model
+            # Fit the Linear Regression model
             model = LinearRegression()
             model.fit(X, y)
             
@@ -192,8 +210,14 @@ elif page == "Stock Forecast":
             future_days = np.array([[i] for i in range(X.max() + 1, X.max() + 31)])  # X is now a NumPy array
             future_predictions = model.predict(future_days)
             
+            # Debug: Display the future predictions
+            st.write("Future predictions:", future_predictions)
+            
             # Create a DataFrame for the forecast
             forecast_df = pd.DataFrame({"Day": future_days.flatten(), "Predicted WT": future_predictions})
+            
+            # Debug: Display the forecast DataFrame
+            st.write("Forecast DataFrame:", forecast_df)
             
             # Plot the forecast
             fig = px.line(forecast_df, x='Day', y='Predicted WT', title="Stock Prediction for Next 30 Days")
