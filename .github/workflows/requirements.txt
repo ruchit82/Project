@@ -22,3 +22,5 @@ sns
 tabulate
 fpdf
 FPDF 
+pillow
+python-barcode
