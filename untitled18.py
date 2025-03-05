@@ -16,14 +16,20 @@ import io
 
 # Load all sheets from the Excel file
 @st.cache_data
-def load_all_sheets(file_path):
-    return pd.read_excel(file_path, sheet_name=None, dtype=str)
+def load_all_sheets(uploaded_file):
+    try:
+        return pd.read_excel(uploaded_file, sheet_name=None, dtype=str)  # Read all sheets as a dictionary
+    except Exception as e:
+        st.error(f"Error reading file: {e}")
+        return None
 
 # Search for product code in all sheets
 def find_product(data_sheets, product_code):
     for sheet_name, df in data_sheets.items():
-        if "DESIGN NO" in df.columns and product_code in df["DESIGN NO"].values:
-            return df[df["DESIGN NO"] == product_code].iloc[0]  # Return first match
+        if "DESIGN NO" in df.columns:
+            matched_row = df[df["DESIGN NO"] == product_code]
+            if not matched_row.empty:
+                return matched_row.iloc[0].to_dict()  # Return as dictionary for easy editing
     return None
 
 # Generate Barcode
@@ -46,16 +52,14 @@ def create_label(product_data, party_code, order_no):
 
     # Add Text
     text = f"Order No: {order_no}\nParty Code: {party_code}\n"
-    for col, value in product_data.items():
-        text += f"{col}: {value}\n"
+    for key, value in product_data.items():
+        text += f"{key}: {value}\n"
 
     draw.text((10, 10), text, fill="black", font=font)
 
-    # Generate Barcode
+    # Generate and Paste Barcode
     barcode_img = generate_barcode(order_no)
     barcode_img = barcode_img.resize((300, 80))
-
-    # Paste Barcode on Label
     img.paste(barcode_img, (100, 220))
 
     return img
@@ -68,49 +72,58 @@ uploaded_file = st.file_uploader("Upload Excel File", type=["xlsx"])
 if uploaded_file:
     data_sheets = load_all_sheets(uploaded_file)
 
-    # Enter Product Code
-    product_code = st.text_input("Enter Product Code:")
-    
-    if product_code:
-        product_data = find_product(data_sheets, product_code)
+    if data_sheets:  # Ensure the file is loaded successfully
+        st.success("File Uploaded Successfully!")
 
-        if product_data is not None:
-            # Store extracted data in session state for editing
-            if "editable_data" not in st.session_state:
-                st.session_state["editable_data"] = product_data.to_dict()
+        # Enter Product Code
+        product_code = st.text_input("Enter Product Code:")
+        
+        if product_code:
+            product_data = find_product(data_sheets, product_code)
 
-            # User Input for Party Code and Order No
-            party_code = st.text_input("Enter Party Code:", value=st.session_state.get("party_code", ""))
-            order_no = st.text_input("Enter Order No:", value=st.session_state.get("order_no", ""))
+            if product_data is not None:
+                st.write("Product Found!")
 
-            # Editable Fields
-            editable_data = {}
-            for key, value in st.session_state["editable_data"].items():
-                editable_data[key] = st.text_input(f"{key}:", value=value)
+                # Store extracted data in session state for editing
+                if "editable_data" not in st.session_state:
+                    st.session_state["editable_data"] = product_data
 
-            # Update Session State
-            if st.button("Update Data"):
-                st.session_state["editable_data"] = editable_data
-                st.session_state["party_code"] = party_code
-                st.session_state["order_no"] = order_no
-                st.success("Data Updated Successfully!")
+                # User Input for Party Code and Order No
+                party_code = st.text_input("Enter Party Code:", value=st.session_state.get("party_code", ""))
+                order_no = st.text_input("Enter Order No:", value=st.session_state.get("order_no", ""))
 
-            # Generate Label Preview
-            if st.button("Generate Label"):
-                label_img = create_label(editable_data, party_code, order_no)
-                img_bytes = io.BytesIO()
-                label_img.save(img_bytes, format="PNG")
-                st.image(img_bytes, caption="Label Preview", use_column_width=True)
+                # Editable Fields
+                editable_data = {}
+                for key, value in st.session_state["editable_data"].items():
+                    editable_data[key] = st.text_input(f"{key}:", value=value)
 
-                # Download Button
-                st.download_button("Download Label", data=img_bytes.getvalue(), file_name="label.png", mime="image/png")
+                # Update Session State
+                if st.button("Update Data"):
+                    st.session_state["editable_data"] = editable_data
+                    st.session_state["party_code"] = party_code
+                    st.session_state["order_no"] = order_no
+                    st.success("Data Updated Successfully!")
 
-            # Print Duplicate Label
-            if st.button("Print Duplicate Label"):
-                label_img = create_label(editable_data, party_code, order_no)
-                img_bytes = io.BytesIO()
-                label_img.save(img_bytes, format="PNG")
-                st.image(img_bytes, caption="Duplicate Label Preview", use_column_width=True)
+                # Generate Label Preview
+                if st.button("Generate Label"):
+                    label_img = create_label(editable_data, party_code, order_no)
+                    img_bytes = io.BytesIO()
+                    label_img.save(img_bytes, format="PNG")
+                    st.image(img_bytes, caption="Label Preview", use_column_width=True)
+
+                    # Download Button
+                    st.download_button("Download Label", data=img_bytes.getvalue(), file_name="label.png", mime="image/png")
+
+                # Print Duplicate Label
+                if st.button("Print Duplicate Label"):
+                    label_img = create_label(editable_data, party_code, order_no)
+                    img_bytes = io.BytesIO()
+                    label_img.save(img_bytes, format="PNG")
+                    st.image(img_bytes, caption="Duplicate Label Preview", use_column_width=True)
+
+            else:
+                st.warning("Product code not found in any sheet.")
 
 else:
     st.warning("Please upload an Excel file to proceed.")
+
