@@ -9,103 +9,108 @@ Original file is located at
 
 import streamlit as st
 import pandas as pd
-import qrcode
+from barcode import Code128
+from barcode.writer import ImageWriter
 from PIL import Image, ImageDraw, ImageFont
-import io
 import os
 
-# Load all sheets from the uploaded Excel file
+# Function to load all sheets from an Excel file
+@st.cache_data
 def load_all_sheets(file):
     return pd.read_excel(file, sheet_name=None, dtype=str)
 
-# Search for product code across multiple sheets
+# Function to find product details in all sheets
 def find_product(data_sheets, product_code):
     for sheet_name, df in data_sheets.items():
         if "DESIGN NO" in df.columns and product_code in df["DESIGN NO"].values:
-            return df[df["DESIGN NO"] == product_code].iloc[0].to_dict()
+            return df[df["DESIGN NO"] == product_code].iloc[0]
     return None
 
-# Generate QR Code
-def generate_qr(data):
-    qr = qrcode.QRCode(version=1, box_size=10, border=4)
-    qr.add_data(data)
-    qr.make(fit=True)
-    img = qr.make_image(fill="black", back_color="white")
-    return img
+# Function to generate a barcode image
+def generate_barcode(data, filename="barcode"):
+    barcode = Code128(data, writer=ImageWriter())
+    barcode_path = f"{filename}.png"
+    barcode.save(barcode_path)
+    return barcode_path
 
-# Create Label Image with QR Code
+# Function to create the label image
 def create_label(product_data, party_code, order_no):
     label_width, label_height = 400, 300
     img = Image.new("RGB", (label_width, label_height), "white")
     draw = ImageDraw.Draw(img)
 
-    # Load Font
+    # Load font
     try:
-        font = ImageFont.truetype("arial.ttf", 16)
+        font = ImageFont.truetype("arial.ttf", 14)
     except:
         font = ImageFont.load_default()
 
-    # Add Text
+    # Add text
     text = f"Order No: {order_no}\nParty Code: {party_code}\n"
-    fields_to_include = ["MACH CODE", "WIDTH", "THICK", "MACH NAME", "DULL/NO DULL"]
-
-    for key in fields_to_include:
-        if key in product_data:
-            text += f"{key}: {product_data[key]}\n"
-
+    for col in product_data.index:
+        text += f"{col}: {product_data[col]}\n"
     draw.text((10, 10), text, fill="black", font=font)
 
-    # Generate QR Code
-    qr_data = f"Order No: {order_no}, Party Code: {party_code}, " + ", ".join(f"{k}: {v}" for k, v in product_data.items())
-    qr_img = generate_qr(qr_data)
-    qr_img = qr_img.resize((100, 100))
+    # Generate Barcode
+    barcode_path = generate_barcode(order_no)
+    barcode_img = Image.open(barcode_path).resize((200, 50))
 
-    # Paste QR Code on Label
-    img.paste(qr_img, (280, 180))
+    # Paste Barcode on Label
+    img.paste(barcode_img, (100, 220))
 
     return img
 
-# Streamlit App
-st.title("QR Code Label Generator")
+# Streamlit UI
+st.title("Product Label Generator")
 
+# File uploader for Excel sheet
 uploaded_file = st.file_uploader("Upload Excel File", type=["xlsx"])
 
 if uploaded_file:
     data_sheets = load_all_sheets(uploaded_file)
 
-    product_code = st.text_input("Enter Product Code:")
+    # Session state to prevent refresh loss
+    if "product_code" not in st.session_state:
+        st.session_state["product_code"] = ""
+    if "party_code" not in st.session_state:
+        st.session_state["party_code"] = ""
+    if "order_no" not in st.session_state:
+        st.session_state["order_no"] = ""
 
-    if st.button("Fetch Product Data"):
-        product_data = find_product(data_sheets, product_code)
+    # Input for product code
+    st.session_state["product_code"] = st.text_input("Enter Product Code", st.session_state["product_code"])
 
-        if product_data:
-            party_code = st.text_input("Party Code", "")
-            order_no = st.text_input("Order No", "")
+    if st.session_state["product_code"]:
+        product_data = find_product(data_sheets, st.session_state["product_code"])
+        
+        if product_data is not None:
+            # Display extracted data for review
+            st.subheader("Extracted Product Details")
+            editable_data = {}
+            for col in product_data.index:
+                editable_data[col] = st.text_input(col, value=product_data[col])
 
-            # Editable Fields
-            for key in ["MACH CODE", "WIDTH", "THICK", "MACH NAME", "DULL/NO DULL"]:
-                if key in product_data:
-                    product_data[key] = st.text_input(key, product_data[key])
+            st.session_state["party_code"] = st.text_input("Enter Party Code", st.session_state["party_code"])
+            st.session_state["order_no"] = st.text_input("Enter Order No", st.session_state["order_no"])
 
             if st.button("Generate Label"):
-                label_img = create_label(product_data, party_code, order_no)
+                # Create the label
+                label_img = create_label(editable_data, st.session_state["party_code"], st.session_state["order_no"])
+                label_path = "label.png"
+                label_img.save(label_path)
 
-                # Convert image to bytes
-                img_byte_arr = io.BytesIO()
-                label_img.save(img_byte_arr, format="PNG")
-                img_byte_arr.seek(0)
+                # Show label
+                st.image(label_path, caption="Generated Label")
 
-                # Display Label Preview
-                st.image(label_img, caption="Generated Label", use_column_width=False)
+                # Download button for label
+                with open(label_path, "rb") as file:
+                    st.download_button("Download Label", file, file_name="label.png", mime="image/png")
 
-                # Download Option
-                st.download_button("Download Label", img_byte_arr, file_name="label.png", mime="image/png")
-
-                # Print Duplicate Option
+                # Option to print a duplicate label
                 if st.button("Print Duplicate Label"):
-                    label_img.save("label_print.png")
-                    os.system(f"start label_print.png")  # Windows
-                    st.success("Duplicate Label Sent to Printer!")
+                    st.image(label_path, caption="Duplicate Label", use_column_width=True)
+                    with open(label_path, "rb") as file:
+                        st.download_button("Download Duplicate Label", file, file_name="duplicate_label.png", mime="image/png")
         else:
-            st.error("Product Code not found in any sheet.")
+            st.error("Product Code not found in the Excel file.")
 
