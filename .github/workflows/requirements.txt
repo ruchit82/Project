@@ -22,3 +22,6 @@ sns
 tabulate
 fpdf
 FPDF 
+qrcode[pil]
+pillow
+
