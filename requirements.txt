@@ -25,3 +25,5 @@ FPDF
 qrcode[pil]
 pillow
 python-barcode
+PyPDF2
+
